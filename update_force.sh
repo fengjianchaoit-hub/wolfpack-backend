@@ -1,0 +1,24 @@
+#!/bin/bash
+TOKEN="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"
+REPO="fengjianchaoit-hub/wolfpack-dashboard"
+FILE="index.html"
+
+# Get current SHA
+SHA=$(curl -s -H "Authorization: token $TOKEN" \
+  "https://api.github.com/repos/$REPO/contents/$FILE" | \
+  python3 -c "import sys,json; print(json.load(sys.stdin)['sha'])" 2>/dev/null)
+
+echo "Current SHA: $SHA"
+
+# Read and encode file
+CONTENT=$(python3 -c "import base64; print(base64.b64encode(open('/root/.openclaw/workspace/wolfpack_dashboard/index.html', 'rb').read()).decode())")
+
+# Update file
+RESPONSE=$(curl -s -X PUT \
+  -H "Authorization: token $TOKEN" \
+  -H "Accept: application/vnd.github.v3+json" \
+  -H "Content-Type: application/json" \
+  "https://api.github.com/repos/$REPO/contents/$FILE" \
+  -d "{\"message\":\"Force update: 法师 to 狼头\",\"content\":\"$CONTENT\",\"sha\":\"$SHA\"}")
+
+echo "Response: $RESPONSE" | python3 -m json.tool 2>/dev/null || echo "$RESPONSE"

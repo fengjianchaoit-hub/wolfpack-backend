@@ -1,0 +1,25 @@
+{
+  "feishu_sync": {
+    "enabled": true,
+    "webhook_url": "",
+    "secret": "",
+    "target_group": "狼牙01-Kimi同步",
+    "sync_interval_minutes": 10,
+    "message_format": "rich_text",
+    "max_message_length": 9000,
+    "retry_config": {
+      "max_retries": 3,
+      "retry_delays": [1, 2, 4]
+    },
+    "filters": {
+      "exclude_patterns": [],
+      "include_only_patterns": [],
+      "min_content_length": 10
+    },
+    "storage": {
+      "conversation_log_path": "/root/.openclaw/workspace/memory/conversation_log.json",
+      "last_sync_timestamp_path": "/root/.openclaw/workspace/memory/last_sync_timestamp.txt",
+      "failed_queue_path": "/root/.openclaw/workspace/memory/failed_messages_queue.json"
+    }
+  }
+}

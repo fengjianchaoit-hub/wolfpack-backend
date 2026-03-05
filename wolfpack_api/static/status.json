@@ -1,0 +1,101 @@
+{
+  "lastUpdated": "2026-03-03T18:38:00+08:00",
+  "systemStatus": "running",
+  "uptime": "48h 15m",
+  "metrics": {
+    "activeAgents": 4,
+    "totalAgents": 4,
+    "completedTasks": 12,
+    "pendingTasks": 3
+  },
+  "agents": [
+    {
+      "id": "wolf-01",
+      "name": "狼头",
+      "emoji": "🔥",
+      "role": "团队负责人",
+      "isLeader": true,
+      "status": "online",
+      "statusText": "在线 - 统筹管理中",
+      "isBusy": false,
+      "tasks": [
+        {"text": "团队搭建完成", "status": "done"},
+        {"text": "复盘报告上传", "status": "done"},
+        {"text": "监控仪表盘搭建", "status": "pending"}
+      ]
+    },
+    {
+      "id": "wolf-01",
+      "name": "狼牙01",
+      "emoji": "📝",
+      "role": "文案编辑",
+      "isLeader": false,
+      "status": "online",
+      "statusText": "待命 - 等待明日任务",
+      "isBusy": false,
+      "tasks": [
+        {"text": "抖音报告优化", "status": "done"},
+        {"text": "飞书简报生成", "status": "done"},
+        {"text": "明早9点AI日报", "status": "todo"}
+      ]
+    },
+    {
+      "id": "wolf-02",
+      "name": "狼牙02",
+      "emoji": "📊",
+      "role": "数据分析",
+      "isLeader": false,
+      "status": "online",
+      "statusText": "待命 - 等待明日任务",
+      "isBusy": false,
+      "tasks": [
+        {"text": "数据分析能力就绪", "status": "done"},
+        {"text": "明早10点直播数据分析", "status": "todo"}
+      ]
+    },
+    {
+      "id": "wolf-03",
+      "name": "狼牙03",
+      "emoji": "📈",
+      "role": "可视化",
+      "isLeader": false,
+      "status": "online",
+      "statusText": "待命 - 等待明日任务",
+      "isBusy": false,
+      "tasks": [
+        {"text": "可视化能力就绪", "status": "done"},
+        {"text": "明早11点数据看板", "status": "todo"}
+      ]
+    }
+  ],
+  "tomorrowTasks": [
+    {
+      "time": "09:00",
+      "assignee": "狼牙01",
+      "task": "生成AI热点日报",
+      "priority": "high",
+      "status": "pending"
+    },
+    {
+      "time": "10:00",
+      "assignee": "狼牙02",
+      "task": "分析昨日直播数据（含行为洞察）",
+      "priority": "high",
+      "status": "pending"
+    },
+    {
+      "time": "11:00",
+      "assignee": "狼牙03",
+      "task": "生成数据看板（含视觉重点）",
+      "priority": "medium",
+      "status": "pending"
+    }
+  ],
+  "logs": [
+    {"time": "15:07", "agent": "狼头", "action": "创建狼牙03", "result": "成功"},
+    {"time": "15:07", "agent": "狼头", "action": "创建狼牙02", "result": "成功"},
+    {"time": "15:05", "agent": "狼头", "action": "更新团队管理规范", "result": "成功"},
+    {"time": "14:55", "agent": "狼头", "action": "上传复盘报告到语雀", "result": "成功"},
+    {"time": "14:30", "agent": "狼头", "action": "停止抖音抓取任务", "result": "成功"}
+  ]
+}

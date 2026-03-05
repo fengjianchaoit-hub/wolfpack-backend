@@ -1,0 +1,320 @@
+#!/usr/bin/env python3
+"""
+Wolfpack API - Flask后台服务
+提供仪表盘、任务管理和代理状态更新API
+"""
+
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+import sqlite3
+import os
+from datetime import datetime
+
+app = Flask(__name__)
+CORS(app)
+
+DATABASE = 'wolfpack.db'
+
+def get_db_connection():
+    """获取数据库连接"""
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+# ==================== API Routes ====================
+
+@app.route('/api/dashboard', methods=['GET'])
+def get_dashboard():
+    """
+    获取仪表盘数据
+    返回: 统计信息、任务状态分布、代理状态等
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # 任务统计
+    cursor.execute("SELECT status, COUNT(*) as count FROM tasks GROUP BY status")
+    task_stats = {row['status']: row['count'] for row in cursor.fetchall()}
+    
+    # 代理统计
+    cursor.execute("SELECT status, COUNT(*) as count FROM agents GROUP BY status")
+    agent_stats = {row['status']: row['count'] for row in cursor.fetchall()}
+    
+    # 总任务数
+    cursor.execute("SELECT COUNT(*) as total FROM tasks")
+    total_tasks = cursor.fetchone()['total']
+    
+    # 进行中的任务
+    cursor.execute("SELECT COUNT(*) as count FROM tasks WHERE status = 'in_progress'")
+    in_progress = cursor.fetchone()['count']
+    
+    # 在线代理数
+    cursor.execute("SELECT COUNT(*) as count FROM agents WHERE status IN ('online', 'busy')")
+    online_agents = cursor.fetchone()['count']
+    
+    # 最近的任务
+    cursor.execute('''
+        SELECT id, title, status, priority, assigned_to, created_at 
+        FROM tasks 
+        ORDER BY created_at DESC 
+        LIMIT 5
+    ''')
+    recent_tasks = [dict(row) for row in cursor.fetchall()]
+    
+    # 代理列表
+    cursor.execute('''
+        SELECT name, status, last_seen, capabilities, current_task 
+        FROM agents 
+        ORDER BY name
+    ''')
+    agents = [dict(row) for row in cursor.fetchall()]
+    
+    conn.close()
+    
+    return jsonify({
+        'success': True,
+        'data': {
+            'summary': {
+                'total_tasks': total_tasks,
+                'in_progress': in_progress,
+                'online_agents': online_agents,
+                'task_completion_rate': round(
+                    (task_stats.get('completed', 0) / total_tasks * 100), 1
+                ) if total_tasks > 0 else 0
+            },
+            'task_stats': task_stats,
+            'agent_stats': agent_stats,
+            'recent_tasks': recent_tasks,
+            'agents': agents,
+            'timestamp': datetime.now().isoformat()
+        }
+    })
+
+
+@app.route('/api/tasks', methods=['POST'])
+def create_task():
+    """
+    创建新任务
+    请求体: {title, description, priority, assigned_to}
+    """
+    data = request.get_json()
+    
+    if not data or 'title' not in data:
+        return jsonify({
+            'success': False,
+            'error': '缺少必填字段: title'
+        }), 400
+    
+    title = data.get('title')
+    description = data.get('description', '')
+    priority = data.get('priority', 'medium')
+    assigned_to = data.get('assigned_to')
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT INTO tasks (title, description, priority, assigned_to, status)
+        VALUES (?, ?, ?, ?, 'pending')
+    ''', (title, description, priority, assigned_to))
+    
+    task_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    
+    return jsonify({
+        'success': True,
+        'message': '任务创建成功',
+        'data': {
+            'id': task_id,
+            'title': title,
+            'status': 'pending',
+            'priority': priority
+        }
+    }), 201
+
+
+@app.route('/api/tasks/<int:task_id>', methods=['PUT'])
+def update_task(task_id):
+    """
+    更新任务状态
+    请求体: {status, assigned_to, priority} (可选字段)
+    """
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({
+            'success': False,
+            'error': '请求体不能为空'
+        }), 400
+    
+    allowed_fields = ['status', 'assigned_to', 'priority', 'title', 'description']
+    updates = {k: v for k, v in data.items() if k in allowed_fields}
+    
+    if not updates:
+        return jsonify({
+            'success': False,
+            'error': '没有可更新的有效字段'
+        }), 400
+    
+    # 添加更新时间
+    updates['updated_at'] = datetime.now().isoformat()
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # 检查任务是否存在
+    cursor.execute("SELECT id FROM tasks WHERE id = ?", (task_id,))
+    if not cursor.fetchone():
+        conn.close()
+        return jsonify({
+            'success': False,
+            'error': f'任务不存在: {task_id}'
+        }), 404
+    
+    # 构建更新SQL
+    fields = ', '.join([f"{k} = ?" for k in updates.keys()])
+    values = list(updates.values()) + [task_id]
+    
+    cursor.execute(f"UPDATE tasks SET {fields} WHERE id = ?", values)
+    conn.commit()
+    conn.close()
+    
+    return jsonify({
+        'success': True,
+        'message': '任务更新成功',
+        'data': {
+            'id': task_id,
+            'updated_fields': list(updates.keys())
+        }
+    })
+
+
+@app.route('/api/agents/<name>/status', methods=['POST'])
+def update_agent_status(name):
+    """
+    更新代理状态
+    请求体: {status, message, current_task} (可选)
+    """
+    data = request.get_json() or {}
+    
+    status = data.get('status')
+    message = data.get('message', '')
+    current_task = data.get('current_task')
+    
+    if not status:
+        return jsonify({
+            'success': False,
+            'error': '缺少必填字段: status'
+        }), 400
+    
+    valid_statuses = ['online', 'offline', 'busy', 'error', 'idle']
+    if status not in valid_statuses:
+        return jsonify({
+            'success': False,
+            'error': f'无效的状态值。允许的值: {valid_statuses}'
+        }), 400
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # 检查代理是否存在，不存在则创建
+    cursor.execute("SELECT name FROM agents WHERE name = ?", (name,))
+    if not cursor.fetchone():
+        cursor.execute('''
+            INSERT INTO agents (name, status, last_seen)
+            VALUES (?, ?, ?)
+        ''', (name, status, datetime.now()))
+    else:
+        # 更新代理状态
+        cursor.execute('''
+            UPDATE agents 
+            SET status = ?, last_seen = ?
+            WHERE name = ?
+        ''', (status, datetime.now(), name))
+    
+    # 记录状态日志
+    cursor.execute('''
+        INSERT INTO status_logs (agent_name, status, message)
+        VALUES (?, ?, ?)
+    ''', (name, status, message))
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({
+        'success': True,
+        'message': f'代理 [{name}] 状态更新为: {status}',
+        'data': {
+            'agent': name,
+            'status': status,
+            'timestamp': datetime.now().isoformat()
+        }
+    })
+
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """健康检查接口"""
+    return jsonify({
+        'status': 'healthy',
+        'service': 'wolfpack-api',
+        'version': '1.0.0',
+        'timestamp': datetime.now().isoformat()
+    })
+
+
+# ==================== Error Handlers ====================
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({
+        'success': False,
+        'error': '接口不存在'
+    }), 404
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({
+        'success': False,
+        'error': '服务器内部错误'
+    }), 500
+
+
+# ==================== Main ====================
+
+if __name__ == '__main__':
+    # 检查数据库是否存在，不存在则初始化
+    if not os.path.exists(DATABASE):
+        print("数据库不存在，正在初始化...")
+        import init_db
+        init_db.init_db()
+    
+    print("🚀 Wolfpack API 服务启动中...")
+    print("📡 监听地址: http://0.0.0.0:5000")
+    print("")
+    print("可用API端点:")
+    print("  GET  /api/dashboard        - 仪表盘数据")
+    print("  POST /api/tasks            - 创建任务")
+    print("  PUT  /api/tasks/<id>       - 更新任务")
+    print("  POST /api/agents/<name>/status - 更新代理状态")
+    print("  GET  /api/health           - 健康检查")
+    
+    app.run(host='0.0.0.0', port=5000, debug=True)
+
+# ==================== Static Files ====================
+import os
+
+@app.route('/')
+def index():
+    """仪表盘首页"""
+    return app.send_from_directory('/root/.openclaw/workspace/wolfpack_dashboard', 'index.html')
+
+@app.route('/<path:filename>')
+def static_files(filename):
+    """静态文件"""
+    return app.send_from_directory('/root/.openclaw/workspace/wolfpack_dashboard', filename)
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
