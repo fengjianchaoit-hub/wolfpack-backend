@@ -20,6 +20,7 @@
         <spring-boot.version>3.2.3</spring-boot.version>
         <mybatis-plus.version>3.5.5</mybatis-plus.version>
         <hutool.version>5.8.25</hutool.version>
+        <lombok.version>1.18.30</lombok.version>
     </properties>
 
     <modules>
@@ -52,6 +53,14 @@
                 <groupId>cn.hutool</groupId>
                 <artifactId>hutool-all</artifactId>
                 <version>${hutool.version}</version>
+            </dependency>
+
+            <!-- Lombok -->
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+                <optional>true</optional>
             </dependency>
 
             <!-- 内部模块依赖 -->
