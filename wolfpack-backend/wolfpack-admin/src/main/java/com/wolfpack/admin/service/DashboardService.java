@@ -87,13 +87,21 @@ public class DashboardService {
     // ==================== 数据更新接口（供OpenClaw回调）====================
 
     @Transactional
+    @Transactional
     public void updateAgentStatus(String agentId, AgentStatus status, String statusText) {
         Agent agent = agentRepository.findById(agentId)
             .orElseThrow(() -> new RuntimeException("Agent not found: " + agentId));
+        
+        AgentStatus oldStatus = agent.getStatus();
         agent.setStatus(status);
         agent.setStatusText(statusText);
         agent.setLastActiveTime(LocalDateTime.now());
         agentRepository.save(agent);
+        
+        // 自动记录状态变更日志
+        String action = String.format("状态变更: %s → %s (%s)", oldStatus, status, statusText);
+        addExecutionLog(agentId, action, "success", null);
+        
         log.info("Updated agent {} status to {}: {}", agentId, status, statusText);
     }
 
@@ -101,11 +109,20 @@ public class DashboardService {
     public void updateTaskStatus(String taskId, TaskStatus status) {
         Task task = taskRepository.findById(taskId)
             .orElseThrow(() -> new RuntimeException("Task not found: " + taskId));
+        
+        TaskStatus oldStatus = task.getStatus();
         task.setStatus(status);
         if (status == TaskStatus.COMPLETED) {
             task.setCompletedAt(LocalDateTime.now());
         }
         taskRepository.save(task);
+        
+        // 自动记录任务状态变更日志
+        Agent agent = agentRepository.findById(task.getAssigneeId()).orElse(null);
+        String agentName = agent != null ? agent.getName() : task.getAssigneeId();
+        String action = String.format("任务[%s]状态: %s → %s", task.getTitle(), oldStatus, status);
+        addExecutionLog(task.getAssigneeId(), action, "success", null);
+        
         log.info("Updated task {} status to {}", taskId, status);
     }
 

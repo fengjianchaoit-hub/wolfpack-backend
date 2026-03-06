@@ -1,7 +1,6 @@
 package com.wolfpack.admin.config;
 
 import com.wolfpack.admin.entity.Agent;
-import com.wolfpack.admin.entity.ExecutionLog;
 import com.wolfpack.admin.entity.Task;
 import com.wolfpack.admin.repository.AgentJpaRepository;
 import com.wolfpack.admin.repository.ExecutionLogJpaRepository;
@@ -37,8 +36,8 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Initializing database with default data...");
             initAgents();
             initTasks();
-            initLogs();
-            log.info("Database initialized successfully");
+            // 不再初始化假日志，等待真实操作产生
+            log.info("Database initialized successfully (logs will be created by real operations)");
         } else {
             log.info("Database already contains data, skipping initialization");
         }
@@ -171,37 +170,5 @@ public class DataInitializer implements CommandLineRunner {
         taskRepository.save(t7);
 
         log.info("Initialized {} tasks", taskRepository.count());
-    }
-
-    private void initLogs() {
-        ExecutionLog log1 = new ExecutionLog();
-        log1.setAgentId("wolf-head");
-        log1.setAgentName("狼头");
-        log1.setAction("创建狼牙03");
-        log1.setStatus("success");
-        logRepository.save(log1);
-
-        ExecutionLog log2 = new ExecutionLog();
-        log2.setAgentId("wolf-head");
-        log2.setAgentName("狼头");
-        log2.setAction("仪表盘前端部署");
-        log2.setStatus("success");
-        logRepository.save(log2);
-
-        ExecutionLog log3 = new ExecutionLog();
-        log3.setAgentId("wolf-tooth-02");
-        log3.setAgentName("狼牙02");
-        log3.setAction("抖音直播数据检查完成");
-        log3.setStatus("success");
-        logRepository.save(log3);
-
-        ExecutionLog log4 = new ExecutionLog();
-        log4.setAgentId("wolf-tooth-01");
-        log4.setAgentName("狼牙01");
-        log4.setAction("AI热点日报生成完成");
-        log4.setStatus("success");
-        logRepository.save(log4);
-
-        log.info("Initialized {} logs", logRepository.count());
     }
 }

@@ -118,7 +118,17 @@ jobs:
           docker logs wolfpack-backend --tail 20 2>/dev/null || echo "后端未运行"
           
           echo "=== 健康检查 ==="
-          curl -s http://localhost:8080/api/v1/dashboard/health || echo "后端健康检查失败"
+          HEALTH_STATUS=$(curl -s http://localhost:8080/api/v1/dashboard/health | grep -o '"status":"ok"' || echo "fail")
+          
+          if [ "$HEALTH_STATUS" = '"status":"ok"' ]; then
+            echo "✅ 后端健康检查通过"
+            echo "=== 记录部署日志 ==="
+            curl -s -X POST http://localhost:8080/api/v1/tasks/logs \
+              -H "Content-Type: application/json" \
+              -d '{"agentId":"wolf-head","action":"GitHub Actions 自动部署完成","status":"success","details":"代码提交触发自动部署，服务已恢复正常"}' || echo "日志记录失败（非关键）"
+          else
+            echo "❌ 后端健康检查失败"
+          fi
           
           echo "=== 部署完成 ==="
     
