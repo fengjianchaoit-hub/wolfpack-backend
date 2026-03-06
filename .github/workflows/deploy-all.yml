@@ -18,68 +18,21 @@ jobs:
         chmod 600 ~/.ssh/deploy_key
         ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
     
-    # 修复：Node.js 环境配置（兼容npm/yarn，移除错误的缓存路径）
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'  # 匹配前端项目Node版本
-        cache: 'npm'  # 若用yarn，改为 cache: 'yarn'
-    
-    # 修复：前端打包（增加容错，适配不同包管理器）
-    - name: Build Frontend Project
-      run: |
-        # 进入前端目录，检查是否存在
-        if [ ! -d "wolfpack_dashboard" ]; then
-          echo "❌ 错误：wolfpack_dashboard 目录不存在"
-          exit 1
-        fi
-        cd wolfpack_dashboard
-        
-        # 自动检测包管理器，安装依赖
-        if [ -f "package-lock.json" ]; then
-          npm install --production
-        elif [ -f "yarn.lock" ]; then
-          yarn install --production
-        else
-          echo "⚠️ 未找到package-lock.json/yarn.lock，尝试直接npm install"
-          npm install --production
-        fi
-        
-        # 执行打包（若打包命令不是build，需修改）
-        npm run build || yarn build
-        # 确认打包后的文件存在
-        ls -la dist/ || ls -la build/  # 兼容dist/build两种打包目录
-    
-    # 复制前端文件（适配dist/build目录）
-    - name: Copy Frontend Files (scp)
-      run: |
-        # 自动检测打包目录
-        FRONTEND_DIR="wolfpack_dashboard/dist"
-        if [ ! -d "$FRONTEND_DIR" ]; then
-          FRONTEND_DIR="wolfpack_dashboard/build"
-        fi
-        # 检查index.html是否存在
-        if [ ! -f "$FRONTEND_DIR/index.html" ]; then
-          echo "❌ 错误：$FRONTEND_DIR/index.html 文件不存在"
-          exit 1
-        fi
-        
-        # 复制文件到服务器
-        scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
-          $FRONTEND_DIR/index.html \
-          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/opt/wolfpack-dashboard/html/
-        
-        echo "✅ 前端文件已复制"
-    
-    - name: Restart Frontend
+    - name: Deploy Backend
       run: |
         ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
           ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-          "docker restart wolfpack-frontend && echo '✅ 前端容器已重启'"
+          "cd /opt/wolfpack-java && docker restart wolfpack-backend"
     
-    - name: Verify Deployment
+    - name: Deploy Frontend
+      run: |
+        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+          "docker restart wolfpack-frontend"
+    
+    - name: Verify
       run: |
         sleep 3
-        curl -s --connect-timeout 5 http://${{ secrets.SERVER_HOST }}:8080/api/v1/dashboard/health || echo "⚠️ 健康检查暂时失败，可手动验证"
+        curl -s http://${{ secrets.SERVER_HOST }}:8080/api/v1/dashboard/health | head -c 100
         echo ""
-        echo "✅ 部署流程执行完成"
+        echo "✅ 部署完成"
