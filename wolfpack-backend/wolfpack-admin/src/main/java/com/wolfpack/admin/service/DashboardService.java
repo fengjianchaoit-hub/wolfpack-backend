@@ -87,7 +87,6 @@ public class DashboardService {
     // ==================== 数据更新接口（供OpenClaw回调）====================
 
     @Transactional
-    @Transactional
     public void updateAgentStatus(String agentId, AgentStatus status, String statusText) {
         Agent agent = agentRepository.findById(agentId)
             .orElseThrow(() -> new RuntimeException("Agent not found: " + agentId));
