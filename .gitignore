@@ -1,0 +1,53 @@
+# 临时文件和日志
+*.log
+*.pid
+*.tmp
+
+# 数据文件
+*.json
+!wolfpack-backend/**/pom.xml
+!package.json
+
+# 构建产物
+*.tar.gz
+*.zip
+*.jar
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# 依赖目录
+node_modules/
+target/
+
+# 环境配置（含敏感信息）
+.env
+.env.local
+*_config.json
+*_config_secure.json
+
+# 临时脚本（保留在scripts/目录下的除外）
+update_*.sh
+fix_*.sh
+force_*.sh
+upload_*.sh
+check_*.sh
+
+# 飞书同步（已废弃）
+feishu_sync_*.py
+feishu_sync_*.sh
+sync_to_feishu.py
+
+# 抖音临时数据
+douyin_data_*.json
+douyin_snap_*.json
+douyin_report_*.json
+douyin_live_log.txt
+douyin_live_status.json
+
+# 其他
+__pycache__/
+*.pyc
+.DS_Store
