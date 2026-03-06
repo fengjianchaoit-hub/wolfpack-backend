@@ -11,28 +11,26 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Setup SSH
-      run: |
-        mkdir -p ~/.ssh
-        echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-        chmod 600 ~/.ssh/deploy_key
-        ssh-keyscan -H 47.84.71.25 >> ~/.ssh/known_hosts
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-    
     - name: Deploy Backend
-      run: |
-        ssh -i ~/.ssh/deploy_key admin@47.84.71.25 "
-          cd /opt/wolfpack-java && docker restart wolfpack-backend
-        "
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        script: |
+          cd /opt/wolfpack-java
+          docker restart wolfpack-backend
+          echo "Backend OK"
     
     - name: Deploy Frontend
-      run: |
-        rsync -avz -e "ssh -i ~/.ssh/deploy_key" \
-          wolfpack_dashboard/index.html \
-          admin@47.84.71.25:/opt/wolfpack-dashboard/html/
-        ssh -i ~/.ssh/deploy_key admin@47.84.71.25 \
-          "docker restart wolfpack-frontend"
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        script: |
+          docker restart wolfpack-frontend
+          echo "Frontend OK"
     
     - name: Verify
       run: |
