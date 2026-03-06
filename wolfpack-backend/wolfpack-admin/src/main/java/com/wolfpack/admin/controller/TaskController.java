@@ -1,6 +1,7 @@
 package com.wolfpack.admin.controller;
 
 import com.wolfpack.admin.service.DashboardService;
+import com.wolfpack.api.enums.TaskPriority;
 import com.wolfpack.api.enums.TaskStatus;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,25 @@ public class TaskController {
         Map<String, Object> response = new HashMap<>();
         response.put("code", 200);
         response.put("data", dashboardService.getAllTasks());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 创建新任务（供OpenClaw调用）
+     */
+    @PostMapping
+    public ResponseEntity<Map<String, Object>> createTask(@RequestBody CreateTaskRequest request) {
+        dashboardService.createTask(
+            request.getId(),
+            request.getTitle(),
+            request.getAssigneeId(),
+            request.getPriority(),
+            request.getScheduledTime(),
+            request.getDescription()
+        );
+        Map<String, Object> response = new HashMap<>();
+        response.put("code", 200);
+        response.put("message", "任务创建成功");
         return ResponseEntity.ok(response);
     }
 
@@ -52,6 +72,16 @@ public class TaskController {
         response.put("code", 200);
         response.put("message", "日志添加成功");
         return ResponseEntity.ok(response);
+    }
+
+    @Data
+    public static class CreateTaskRequest {
+        private String id;
+        private String title;
+        private String assigneeId;
+        private TaskPriority priority;
+        private String scheduledTime;
+        private String description;
     }
 
     @Data

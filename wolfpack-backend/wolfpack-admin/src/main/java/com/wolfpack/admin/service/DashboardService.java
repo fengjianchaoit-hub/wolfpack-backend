@@ -105,6 +105,31 @@ public class DashboardService {
     }
 
     @Transactional
+    public TaskVO createTask(String id, String title, String assigneeId, 
+                             com.wolfpack.api.enums.TaskPriority priority,
+                             String scheduledTime, String description) {
+        Task task = new Task();
+        task.setId(id);
+        task.setTitle(title);
+        task.setAssigneeId(assigneeId);
+        task.setPriority(priority != null ? priority : com.wolfpack.api.enums.TaskPriority.MEDIUM);
+        task.setStatus(TaskStatus.PENDING);
+        task.setScheduledTime(scheduledTime);
+        task.setDescription(description);
+        task.setIsCronJob(false);
+        taskRepository.save(task);
+        
+        // 自动记录任务创建日志
+        Agent agent = agentRepository.findById(assigneeId).orElse(null);
+        String agentName = agent != null ? agent.getName() : assigneeId;
+        String action = String.format("创建新任务: %s (分配给 %s)", title, agentName);
+        addExecutionLog(assigneeId, action, "success", null);
+        
+        log.info("Created task {} for agent {}", id, assigneeId);
+        return convertToTaskVO(task);
+    }
+
+    @Transactional
     public void updateTaskStatus(String taskId, TaskStatus status) {
         Task task = taskRepository.findById(taskId)
             .orElseThrow(() -> new RuntimeException("Task not found: " + taskId));
