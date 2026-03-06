@@ -72,15 +72,11 @@ jobs:
           docker load < wolfpack-backend.tar.gz
           docker images | grep wolfpack-backend
           
-          echo "=== 创建 Docker 网络（如果不存在）==="
-          docker network create wolfpack-network 2>/dev/null || true
-          
           echo "=== 启动 PostgreSQL ==="
           docker stop wolfpack-postgres 2>/dev/null || true
           docker rm wolfpack-postgres 2>/dev/null || true
           docker run -d \
             --name wolfpack-postgres \
-            --network wolfpack-network \
             -e POSTGRES_DB=wolfpack \
             -e POSTGRES_USER=wolfpack \
             -e POSTGRES_PASSWORD=wolfpack123 \
@@ -97,9 +93,9 @@ jobs:
           docker rm wolfpack-backend 2>/dev/null || true
           docker run -d \
             --name wolfpack-backend \
-            --network wolfpack-network \
+            --link wolfpack-postgres:postgres \
             -e SPRING_PROFILES_ACTIVE=prod \
-            -e SPRING_DATASOURCE_URL=jdbc:postgresql://wolfpack-postgres:5432/wolfpack \
+            -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/wolfpack \
             -e SPRING_DATASOURCE_USERNAME=wolfpack \
             -e SPRING_DATASOURCE_PASSWORD=wolfpack123 \
             -p 8080:8080 \
