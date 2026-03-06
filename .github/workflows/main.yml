@@ -7,6 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    
     steps:
     - uses: actions/checkout@v4
     
@@ -31,39 +32,33 @@ jobs:
       working-directory: ./wolfpack-backend
       run: docker save wolfpack-backend:latest | gzip > wolfpack-backend.tar.gz
     
-    - name: Move artifacts to root
+    - name: Prepare Deploy Package
       run: |
-        mv wolfpack-backend/wolfpack-backend.tar.gz ./
-        mv wolfpack-backend/docker-compose.yml ./
+        mkdir -p deploy
+        cp wolfpack-backend/wolfpack-backend.tar.gz deploy/
+        cp wolfpack-backend/docker-compose.yml deploy/
+        ls -la deploy/
     
-    - name: Upload Docker Image
+    - name: Upload Deploy Package
       uses: actions/upload-artifact@v4
       with:
-        name: docker-image
-        path: wolfpack-backend.tar.gz
-    
-    - name: Upload Docker Compose
-      uses: actions/upload-artifact@v4
-      with:
-        name: docker-compose
-        path: docker-compose.yml
+        name: deploy-package
+        path: deploy/*
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    steps:
-    - name: Download Docker Image
-      uses: actions/download-artifact@v4
-      with:
-        name: docker-image
-        path: ./ 
     
-    - name: Download Docker Compose
+    steps:
+    - name: Download Package
       uses: actions/download-artifact@v4
       with:
-        name: docker-compose
-        path: ./ 
+        name: deploy-package
+        path: ./deploy
+    
+    - name: List files
+      run: ls -la ./deploy
     
     - name: Deploy to Server
       uses: appleboy/scp-action@master
@@ -71,18 +66,20 @@ jobs:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         password: ${{ secrets.SERVER_PASSWORD }}
-        source: "wolfpack-backend.tar.gz,docker-compose.yml"
+        source: "deploy/*"
         target: "/opt/wolfpack-java"
     
     - name: Restart Services
-      uses: appleboy/scp-action@master
+      uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         password: ${{ secrets.SERVER_PASSWORD }}
         script: |
-          cd /opt/wolfpack-java
+          cd /opt/wolfpack-java/deploy
+          mv wolfpack-backend.tar.gz docker-compose.yml ../
+          cd ..
           docker load < wolfpack-backend.tar.gz
           docker-compose down || true
           docker-compose up -d
-          rm -f wolfpack-backend.tar.gz
+          rm -rf deploy wolfpack-backend.tar.gz
