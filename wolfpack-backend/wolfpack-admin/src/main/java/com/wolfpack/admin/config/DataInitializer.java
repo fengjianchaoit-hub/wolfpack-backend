@@ -5,6 +5,7 @@ import com.wolfpack.admin.entity.Task;
 import com.wolfpack.admin.repository.AgentJpaRepository;
 import com.wolfpack.admin.repository.ExecutionLogJpaRepository;
 import com.wolfpack.admin.repository.TaskJpaRepository;
+import com.wolfpack.admin.util.BeijingTimeUtil;
 import com.wolfpack.api.enums.AgentStatus;
 import com.wolfpack.api.enums.TaskPriority;
 import com.wolfpack.api.enums.TaskStatus;
@@ -13,8 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
 
 /**
  * 数据初始化器 - 应用启动时初始化基础数据
@@ -52,7 +51,7 @@ public class DataInitializer implements CommandLineRunner {
         leader.setIsLeader(true);
         leader.setStatus(AgentStatus.ONLINE);
         leader.setStatusText("在线 - 统筹管理中");
-        leader.setLastActiveTime(LocalDateTime.now());
+        leader.setLastActiveTime(BeijingTimeUtil.now());
         agentRepository.save(leader);
 
         Agent a1 = new Agent();
@@ -63,7 +62,7 @@ public class DataInitializer implements CommandLineRunner {
         a1.setIsLeader(false);
         a1.setStatus(AgentStatus.ONLINE);
         a1.setStatusText("待命 - 等待任务");
-        a1.setLastActiveTime(LocalDateTime.now());
+        a1.setLastActiveTime(BeijingTimeUtil.now());
         agentRepository.save(a1);
 
         Agent a2 = new Agent();
@@ -74,7 +73,7 @@ public class DataInitializer implements CommandLineRunner {
         a2.setIsLeader(false);
         a2.setStatus(AgentStatus.ONLINE);
         a2.setStatusText("待命 - 等待任务");
-        a2.setLastActiveTime(LocalDateTime.now());
+        a2.setLastActiveTime(BeijingTimeUtil.now());
         agentRepository.save(a2);
 
         Agent a3 = new Agent();
@@ -85,7 +84,7 @@ public class DataInitializer implements CommandLineRunner {
         a3.setIsLeader(false);
         a3.setStatus(AgentStatus.ONLINE);
         a3.setStatusText("待命 - 等待任务");
-        a3.setLastActiveTime(LocalDateTime.now());
+        a3.setLastActiveTime(BeijingTimeUtil.now());
         agentRepository.save(a3);
 
         log.info("Initialized {} agents", agentRepository.count());

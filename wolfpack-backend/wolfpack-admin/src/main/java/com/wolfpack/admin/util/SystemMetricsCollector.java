@@ -151,7 +151,7 @@ public class SystemMetricsCollector {
             log.warn("Failed to read /proc/uptime: {}", e.getMessage());
         }
         // 备用：使用 JVM 时间
-        Duration duration = Duration.between(jvmStartTime, LocalDateTime.now());
+        Duration duration = Duration.between(jvmStartTime, BeijingTimeUtil.now());
         long hours = duration.toHours();
         long minutes = duration.toMinutes() % 60;
         return String.format("%dh %dm", hours, minutes);
