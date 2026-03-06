@@ -55,6 +55,10 @@ public class DashboardService {
 
     public List<TaskVO> getTaskList() { return new ArrayList<>(taskCache); }
     
+    // 别名方法供其他Controller使用
+    public List<AgentVO> getAllAgents() { return getAgentList(); }
+    public List<TaskVO> getAllTasks() { return getTaskList(); }
+    
     public List<Map<String, Object>> getExecutionLogs() {
         List<Map<String, Object>> logs = new ArrayList<>();
         Map<String, Object> log1 = new HashMap<>(); log1.put("time", "15:07"); log1.put("agent", "狼头"); log1.put("action", "创建狼牙03"); log1.put("status", "success"); logs.add(log1);
