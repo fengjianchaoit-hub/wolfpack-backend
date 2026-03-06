@@ -9,50 +9,28 @@
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0a0e14 0%, #1a1f2e 100%); color: #e6edf3; min-height: 100vh; padding: 20px; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .header h1 { font-size: 24px; background: linear-gradient(90deg, #58a6ff, #238636); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .refresh-btn { background: #238636; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-        .refresh-btn:hover { background: #2ea043; }
+        .refresh-btn { background: #238636; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
         .stat-card { background: rgba(22, 27, 34, 0.8); border: 1px solid #30363d; border-radius: 12px; padding: 20px; }
         .stat-label { font-size: 13px; color: #8b949e; margin-bottom: 8px; }
         .stat-value { font-size: 32px; font-weight: 700; color: #fff; }
         .section { background: rgba(22, 27, 34, 0.8); border: 1px solid #30363d; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .section-title { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .section-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
         .agent-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
         .agent-card { background: rgba(48, 54, 61, 0.5); border-radius: 10px; padding: 16px; border: 1px solid #30363d; }
-        .agent-card.leader { border: 1px solid rgba(88, 166, 255, 0.5); }
-        .agent-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .agent-name { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 6px; }
-        .agent-role { font-size: 11px; padding: 2px 8px; border-radius: 12px; background: rgba(88, 166, 255, 0.2); color: #58a6ff; }
-        .agent-role.leader { background: rgba(210, 153, 34, 0.2); color: #d29922; }
-        .agent-status { font-size: 13px; color: #8b949e; margin-bottom: 12px; display: flex; align-items: center; gap: 4px; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-        .status-dot.online { background: #238636; }
-        .status-dot.busy { background: #d29922; }
-        .status-dot.idle { background: #8b949e; }
-        .agent-tasks { font-size: 12px; }
-        .task-item { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; color: #e6edf3; }
-        .task-item.done { color: #8b949e; }
-        .task-icon { font-size: 12px; }
-        .task-icon.done { color: #238636; }
-        .task-icon.pending { color: #d29922; }
-        .task-icon.waiting { color: #8b949e; }
+        .agent-name { font-weight: 600; font-size: 15px; margin-bottom: 8px; }
+        .agent-role { font-size: 11px; color: #58a6ff; margin-bottom: 8px; }
+        .agent-status { font-size: 13px; color: #8b949e; }
         .task-table { width: 100%; border-collapse: collapse; }
         .task-table th, .task-table td { padding: 12px; text-align: left; border-bottom: 1px solid #30363d; font-size: 13px; }
-        .task-table th { color: #8b949e; font-weight: 500; }
+        .task-table th { color: #8b949e; }
         .priority-high { color: #da3633; background: rgba(218, 54, 51, 0.2); padding: 2px 8px; border-radius: 4px; font-size: 11px; }
         .priority-medium { color: #d29922; background: rgba(210, 153, 34, 0.2); padding: 2px 8px; border-radius: 4px; font-size: 11px; }
-        .status-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
-        .status-badge.pending { color: #8b949e; }
-        .status-badge.running { color: #d29922; }
-        .status-badge.completed { color: #238636; }
         .log-entry { display: grid; grid-template-columns: 80px 100px 1fr 80px; gap: 12px; padding: 10px 0; border-bottom: 1px solid #30363d; font-size: 13px; }
         .log-time { color: #8b949e; }
         .log-agent { color: #58a6ff; }
-        .log-action { color: #e6edf3; }
-        .log-success { color: #238636; display: flex; align-items: center; gap: 4px; }
+        .log-success { color: #238636; }
         .loading { text-align: center; padding: 40px; color: #8b949e; }
-        .error { color: #da3633; padding: 20px; }
     </style>
 </head>
 <body>
@@ -67,18 +45,18 @@
         <div class="stat-card"><div class="stat-label">系统运行时间</div><div class="stat-value" id="uptime">-</div></div>
     </div>
     <div class="section">
-        <div class="section-header"><div class="section-title">🤖 代理状态监控</div></div>
-        <div class="agent-grid" id="agentGrid"><div class="loading">加载中...</div></div>
+        <div class="section-title">🤖 代理状态监控</div>
+        <div class="agent-grid" id="agentGrid"></div>
     </div>
     <div class="section">
-        <div class="section-header"><div class="section-title">📋 任务列表</div></div>
+        <div class="section-title">📋 任务列表</div>
         <table class="task-table">
             <thead><tr><th>时间</th><th>负责人</th><th>任务</th><th>优先级</th><th>状态</th></tr></thead>
-            <tbody id="taskList"><tr><td colspan="5" class="loading">加载中...</td></tr></tbody>
+            <tbody id="taskList"></tbody>
         </table>
     </div>
     <div class="section">
-        <div class="section-header"><div class="section-title">📜 最近执行日志</div></div>
+        <div class="section-title">📜 最近执行日志</div>
         <div id="logList"><div class="loading">加载中...</div></div>
     </div>
     <script>
@@ -88,50 +66,38 @@
                 const [dashRes, agentRes, taskRes, logRes] = await Promise.all([
                     fetch(API), fetch(API + '/agents'), fetch(API + '/tasks'), fetch(API + '/logs')
                 ]);
-                const dashData = await dashRes.json();
-                const agentData = await agentRes.json();
-                const taskData = await taskRes.json();
-                const logData = await logRes.json();
+                const dash = await dashRes.json(), agent = await agentRes.json(), task = await taskRes.json(), log = await logRes.json();
                 
-                const d = dashData.data;
-                document.getElementById('activeAgents').textContent = d.agentStats.online + '/' + d.agentStats.total;
-                document.getElementById('completedToday').textContent = d.taskStats.completed;
-                document.getElementById('pendingTasks').textContent = d.taskStats.pending;
-                document.getElementById('uptime').textContent = d.systemStatus.uptime;
+                document.getElementById('activeAgents').textContent = dash.data.agentStats.online + '/' + dash.data.agentStats.total;
+                document.getElementById('completedToday').textContent = dash.data.taskStats.completed;
+                document.getElementById('pendingTasks').textContent = dash.data.taskStats.pending;
+                document.getElementById('uptime').textContent = dash.data.systemStatus.uptime;
                 
-                const agents = agentData.data || [];
-                document.getElementById('agentGrid').innerHTML = agents.map(a => {
-                    const isLeader = a.isLeader || a.role === '团队负责人';
-                    const statusClass = a.status === 'ONLINE' ? 'online' : a.status === 'BUSY' ? 'busy' : 'idle';
-                    return `
-                        <div class="agent-card ${isLeader ? 'leader' : ''}">
-                            <div class="agent-header">
-                                <div class="agent-name">${a.emoji || '🐺'} ${a.name}</div>
-                                <span class="agent-role ${isLeader ? 'leader' : ''}">${a.role}</span>
-                            </div>
-                            <div class="agent-status"><span class="status-dot ${statusClass}"></span>${a.statusText}</div>
-                        </div>`;
-                }).join('');
+                document.getElementById('agentGrid').innerHTML = (agent.data || []).map(a => `
+                    <div class="agent-card">
+                        <div class="agent-name">${a.emoji || '🐺'} ${a.name}</div>
+                        <div class="agent-role">${a.role}</div>
+                        <div class="agent-status">${a.statusText}</div>
+                    </div>
+                `).join('');
                 
-                const tasks = taskData.data || [];
-                document.getElementById('taskList').innerHTML = tasks.map(t => `
+                document.getElementById('taskList').innerHTML = (task.data || []).map(t => `
                     <tr>
-                        <td>${t.time || '-'}</td><td>${t.assignee || '-'}</td><td>${t.task || '-'}</td>
+                        <td>${t.time}</td><td>${t.assignee}</td><td>${t.task}</td>
                         <td><span class="${t.priority === 'HIGH' ? 'priority-high' : 'priority-medium'}">${t.priority === 'HIGH' ? '高' : '中'}</span></td>
-                        <td><span class="status-badge ${t.status === 'PENDING' ? 'pending' : t.status === 'RUNNING' || t.status === 'IN_PROGRESS' ? 'running' : 'completed'}">${t.status === 'PENDING' ? '⏳ 待执行' : t.status === 'RUNNING' || t.status === 'IN_PROGRESS' ? '▶ 执行中' : '✓ 已完成'}</span></td>
-                    </tr>`).join('');
+                        <td>${t.status === 'PENDING' ? '⏳ 待执行' : t.status === 'COMPLETED' ? '✓ 已完成' : '▶ 执行中'}</td>
+                    </tr>
+                `).join('');
                 
-                const logs = logData.data || [];
-                document.getElementById('logList').innerHTML = logs.map(l => `
+                document.getElementById('logList').innerHTML = (log.data || []).map(l => `
                     <div class="log-entry">
                         <span class="log-time">${l.time}</span>
                         <span class="log-agent">${l.agent}</span>
-                        <span class="log-action">${l.action}</span>
-                        <span class="log-success">${l.status === 'success' ? '✓ 成功' : '✗ 失败'}</span>
-                    </div>`).join('');
-            } catch (e) {
-                console.error(e);
-            }
+                        <span>${l.action}</span>
+                        <span class="log-success">✓ ${l.status === 'success' ? '成功' : '失败'}</span>
+                    </div>
+                `).join('');
+            } catch (e) { console.error(e); }
         }
         loadData(); setInterval(loadData, 30000);
     </script>
