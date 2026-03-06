@@ -36,4 +36,9 @@ public class DashboardController {
     public R<Object> health() {
         return R.ok(dashboardService.getHealthStatus());
     }
+
+    @GetMapping("/logs")
+    public R<Object> getLogs() {
+        return R.ok(dashboardService.getExecutionLogs());
+    }
 }
