@@ -11,17 +11,16 @@
         .header h1 { font-size: 24px; background: linear-gradient(90deg, #58a6ff, #238636); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .header-right { display: flex; align-items: center; gap: 16px; }
         .last-update { font-size: 12px; color: #8b949e; }
-        .refresh-btn { background: #238636; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        .refresh-btn { background: #238636; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; }
         .refresh-btn:hover:not(:disabled) { background: #2ea043; }
-        .refresh-btn:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
-        .refresh-btn.loading::after { content: '...'; animation: dots 1.5s infinite; }
-        @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60%, 100% { content: '...'; } }
+        .refresh-btn:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; opacity: 0.8; }
+        .refresh-btn.loading { opacity: 0.8; }
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
         .stat-card { background: rgba(22, 27, 34, 0.8); border: 1px solid #30363d; border-radius: 12px; padding: 20px; }
         .stat-label { font-size: 13px; color: #8b949e; margin-bottom: 8px; }
         .stat-value { font-size: 32px; font-weight: 700; color: #fff; }
         .section { background: rgba(22, 27, 34, 0.8); border: 1px solid #30363d; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        .section-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+        .section-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
         .agent-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
         .agent-card { background: rgba(48, 54, 61, 0.5); border-radius: 10px; padding: 16px; border: 1px solid #30363d; }
         .agent-name { font-weight: 600; font-size: 15px; margin-bottom: 8px; }
@@ -32,12 +31,18 @@
         .task-table th { color: #8b949e; }
         .priority-high { color: #da3633; background: rgba(218, 54, 51, 0.2); padding: 2px 8px; border-radius: 4px; font-size: 11px; }
         .priority-medium { color: #d29922; background: rgba(210, 153, 34, 0.2); padding: 2px 8px; border-radius: 4px; font-size: 11px; }
-        .log-entry { display: grid; grid-template-columns: 80px 100px 1fr 80px; gap: 12px; padding: 10px 0; border-bottom: 1px solid #30363d; font-size: 13px; }
+        .log-entry { display: grid; grid-template-columns: 100px 100px 1fr 80px; gap: 12px; padding: 10px 0; border-bottom: 1px solid #30363d; font-size: 13px; }
         .log-time { color: #8b949e; }
         .log-agent { color: #58a6ff; }
         .log-success { color: #238636; }
         .loading { text-align: center; padding: 40px; color: #8b949e; }
         .error { text-align: center; padding: 20px; color: #da3633; background: rgba(218, 54, 51, 0.1); border-radius: 8px; margin: 10px 0; }
+        .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 16px; }
+        .page-btn { background: #30363d; color: #8b949e; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .page-btn:hover { background: #3d444d; color: #fff; }
+        .page-btn.active { background: #238636; color: #fff; }
+        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .page-info { color: #8b949e; font-size: 12px; padding: 6px 12px; }
     </style>
 </head>
 <body>
@@ -59,23 +64,38 @@
         <div class="agent-grid" id="agentGrid"></div>
     </div>
     <div class="section">
-        <div class="section-title">📋 任务列表</div>
+        <div class="section-title">
+            <span>📋 任务列表</span>
+            <span class="page-info" id="taskPageInfo"></span>
+        </div>
         <table class="task-table">
             <thead><tr><th>时间</th><th>负责人</th><th>任务</th><th>优先级</th><th>状态</th></tr></thead>
             <tbody id="taskList"></tbody>
         </table>
+        <div class="pagination" id="taskPagination"></div>
     </div>
     <div class="section">
-        <div class="section-title">📜 最近执行日志</div>
+        <div class="section-title">
+            <span>📜 最近执行日志</span>
+            <span class="page-info" id="logPageInfo"></span>
+        </div>
         <div id="logList"><div class="loading">加载中...</div></div>
+        <div class="pagination" id="logPagination"></div>
     </div>
     <script>
         const API = '/api/v1/dashboard';
         let isLoading = false;
         let autoRefreshInterval = null;
         
-        // 自动刷新间隔：30秒
-        const AUTO_REFRESH_INTERVAL = 30000;
+        // 自动刷新间隔：10秒
+        const AUTO_REFRESH_INTERVAL = 10000;
+        
+        // 分页配置
+        const PAGE_SIZE = 10;
+        let taskCurrentPage = 1;
+        let logCurrentPage = 1;
+        let allTasks = [];
+        let allLogs = [];
         
         async function loadData(showLoading = false) {
             if (isLoading) return;
@@ -117,26 +137,13 @@
                     </div>
                 `).join('') || '<div class="loading">暂无数据</div>';
                 
-                // 更新任务列表
-                document.getElementById('taskList').innerHTML = (task.data || []).map(t => `
-                    <tr>
-                        <td>${t.time || '--:--'}</td>
-                        <td>${t.assignee || '-'}</td>
-                        <td>${t.task || '-'}</td>
-                        <td><span class="${t.priority === 'HIGH' ? 'priority-high' : 'priority-medium'}">${t.priority === 'HIGH' ? '高' : '中'}</span></td>
-                        <td>${t.status === 'PENDING' ? '⏳ 待执行' : t.status === 'COMPLETED' ? '✓ 已完成' : t.status === 'IN_PROGRESS' ? '▶ 执行中' : '-'}</td>
-                    </tr>
-                `).join('') || '<tr><td colspan="5" class="loading">暂无任务</td></tr>';
+                // 保存全部数据用于分页
+                allTasks = task.data || [];
+                allLogs = log.data || [];
                 
-                // 更新日志
-                document.getElementById('logList').innerHTML = (log.data || []).map(l => `
-                    <div class="log-entry">
-                        <span class="log-time">${l.time || '--:--'}</span>
-                        <span class="log-agent">${l.agent || '-'}</span>
-                        <span>${l.action || '-'}</span>
-                        <span class="log-success">✓ ${l.status === 'success' ? '成功' : '失败'}</span>
-                    </div>
-                `).join('') || '<div class="loading">暂无日志</div>';
+                // 渲染分页数据
+                renderTaskList();
+                renderLogList();
                 
                 // 更新最后刷新时间
                 updateLastRefreshTime();
@@ -154,6 +161,72 @@
             }
         }
         
+        function renderTaskList() {
+            const start = (taskCurrentPage - 1) * PAGE_SIZE;
+            const end = start + PAGE_SIZE;
+            const pageData = allTasks.slice(start, end);
+            const totalPages = Math.ceil(allTasks.length / PAGE_SIZE) || 1;
+            
+            document.getElementById('taskList').innerHTML = pageData.map(t => `
+                <tr>
+                    <td>${t.time || '--:--'}</td>
+                    <td>${t.assignee || '-'}</td>
+                    <td>${t.task || '-'}</td>
+                    <td><span class="${t.priority === 'HIGH' ? 'priority-high' : 'priority-medium'}">${t.priority === 'HIGH' ? '高' : '中'}</span></td>
+                    <td>${t.status === 'PENDING' ? '⏳ 待执行' : t.status === 'COMPLETED' ? '✓ 已完成' : t.status === 'IN_PROGRESS' ? '▶ 执行中' : '-'}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="5" class="loading">暂无任务</td></tr>';
+            
+            document.getElementById('taskPageInfo').textContent = `共 ${allTasks.length} 条`;
+            renderPagination('taskPagination', taskCurrentPage, totalPages, (page) => {
+                taskCurrentPage = page;
+                renderTaskList();
+            });
+        }
+        
+        function renderLogList() {
+            const start = (logCurrentPage - 1) * PAGE_SIZE;
+            const end = start + PAGE_SIZE;
+            const pageData = allLogs.slice(start, end);
+            const totalPages = Math.ceil(allLogs.length / PAGE_SIZE) || 1;
+            
+            document.getElementById('logList').innerHTML = pageData.map(l => `
+                <div class="log-entry">
+                    <span class="log-time">${l.time || '--:--'}</span>
+                    <span class="log-agent">${l.agent || '-'}</span>
+                    <span>${l.action || '-'}</span>
+                    <span class="log-success">✓ ${l.status === 'success' ? '成功' : '失败'}</span>
+                </div>
+            `).join('') || '<div class="loading">暂无日志</div>';
+            
+            document.getElementById('logPageInfo').textContent = `共 ${allLogs.length} 条`;
+            renderPagination('logPagination', logCurrentPage, totalPages, (page) => {
+                logCurrentPage = page;
+                renderLogList();
+            });
+        }
+        
+        function renderPagination(containerId, currentPage, totalPages, onPageClick) {
+            let html = '';
+            
+            // 上一页
+            html += `<button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="${currentPage > 1 ? `(${onPageClick})(${currentPage - 1})` : ''}">上一页</button>`;
+            
+            // 页码
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="(${onPageClick})(${i})">${i}</button>`;
+                } else if (i === currentPage - 2 || i === currentPage + 2) {
+                    html += `<span class="page-info">...</span>`;
+                }
+            }
+            
+            // 下一页
+            html += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="${currentPage < totalPages ? `(${onPageClick})(${currentPage + 1})` : ''}">下一页</button>`;
+            
+            document.getElementById(containerId).innerHTML = html;
+        }
+        
         function refreshData() {
             loadData(true);
         }
@@ -165,15 +238,8 @@
         }
         
         function startAutoRefresh() {
-            // 清除现有的定时器
-            if (autoRefreshInterval) {
-                clearInterval(autoRefreshInterval);
-            }
-            // 启动新的定时器
-            autoRefreshInterval = setInterval(() => {
-                console.log('自动刷新数据...');
-                loadData(false);
-            }, AUTO_REFRESH_INTERVAL);
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            autoRefreshInterval = setInterval(() => loadData(false), AUTO_REFRESH_INTERVAL);
         }
         
         function stopAutoRefresh() {
@@ -183,22 +249,18 @@
             }
         }
         
-        // 页面可见性变化时控制自动刷新
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
-                console.log('页面隐藏，暂停自动刷新');
                 stopAutoRefresh();
             } else {
-                console.log('页面显示，恢复自动刷新');
                 startAutoRefresh();
-                loadData(false); // 立即刷新一次
+                loadData(false);
             }
         });
         
-        // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', () => {
-            loadData(true); // 首次加载显示 loading
-            startAutoRefresh(); // 启动自动刷新
+            loadData(true);
+            startAutoRefresh();
         });
     </script>
 </body>

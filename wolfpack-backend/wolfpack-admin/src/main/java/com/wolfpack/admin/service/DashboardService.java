@@ -38,7 +38,7 @@ public class DashboardService {
     private final ExecutionLogJpaRepository logRepository;
     private final SystemMetricsCollector metricsCollector;
 
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(java.time.ZoneId.of("Asia/Shanghai"));
 
     public DashboardDTO getDashboardData() {
         DashboardDTO dto = new DashboardDTO();
@@ -57,6 +57,7 @@ public class DashboardService {
 
     public List<TaskVO> getTaskList() {
         return taskRepository.findAll().stream()
+            .sorted((t1, t2) -> t2.getCreatedAt().compareTo(t1.getCreatedAt())) // 按创建时间倒序
             .map(this::convertToTaskVO)
             .collect(Collectors.toList());
     }
