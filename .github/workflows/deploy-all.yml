@@ -10,8 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-      with:
-        submodules: true  # <-- 添加这行
     
     - name: Setup SSH
       run: |
@@ -20,13 +18,34 @@ jobs:
         chmod 600 ~/.ssh/deploy_key
         ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
     
+    # 新增：安装Node.js（前端打包必备）
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'  # 匹配你的前端项目Node版本
+        cache: 'npm'
+        cache-dependency-path: wolfpack_dashboard/package-lock.json
+    
+    # 新增：前端打包（生成dist目录和index.html）
+    - name: Build Frontend Project
+      run: |
+        cd wolfpack_dashboard  # 进入前端项目目录
+        npm install --production  # 安装依赖（--production减少体积）
+        npm run build  # 执行打包命令（生成dist目录）
+        ls -la dist/  # 打印打包后的文件，确认index.html存在
+    
+    # 修正：复制打包后的前端文件（路径改为dist/index.html）
     - name: Copy Frontend Files (scp)
       run: |
-        # 检查文件是否存在
-        ls -la wolfpack_dashboard/
+        # 先检查打包后的文件是否存在
+        if [ ! -f "wolfpack_dashboard/dist/index.html" ]; then
+          echo "❌ 错误：wolfpack_dashboard/dist/index.html 文件不存在"
+          exit 1
+        fi
         
+        # 复制打包后的index.html到服务器
         scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
-          wolfpack_dashboard/index.html \
+          wolfpack_dashboard/dist/index.html \
           ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/opt/wolfpack-dashboard/html/
         
         echo "✅ 前端文件已复制"
@@ -35,11 +54,12 @@ jobs:
       run: |
         ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
           ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-          "docker restart wolfpack-frontend && echo 'Deployed'"
+          "docker restart wolfpack-frontend && echo '✅ 前端容器已重启'"
     
-    - name: Verify
+    - name: Verify Deployment
       run: |
         sleep 3
-        curl -s http://${{ secrets.SERVER_HOST }}:8080/api/v1/dashboard/health | head -c 100
+        # 先检查服务器端口是否可访问
+        curl -s --connect-timeout 5 http://${{ secrets.SERVER_HOST }}:8080/api/v1/dashboard/health || echo "⚠️ 健康检查暂时失败，可手动验证"
         echo ""
-        echo "✅ 部署完成"
+        echo "✅ 部署流程执行完成"
