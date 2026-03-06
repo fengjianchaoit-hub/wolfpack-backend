@@ -9,7 +9,13 @@
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0a0e14 0%, #1a1f2e 100%); color: #e6edf3; min-height: 100vh; padding: 20px; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .header h1 { font-size: 24px; background: linear-gradient(90deg, #58a6ff, #238636); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .refresh-btn { background: #238636; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+        .header-right { display: flex; align-items: center; gap: 16px; }
+        .last-update { font-size: 12px; color: #8b949e; }
+        .refresh-btn { background: #238636; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        .refresh-btn:hover:not(:disabled) { background: #2ea043; }
+        .refresh-btn:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
+        .refresh-btn.loading::after { content: '...'; animation: dots 1.5s infinite; }
+        @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60%, 100% { content: '...'; } }
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
         .stat-card { background: rgba(22, 27, 34, 0.8); border: 1px solid #30363d; border-radius: 12px; padding: 20px; }
         .stat-label { font-size: 13px; color: #8b949e; margin-bottom: 8px; }
@@ -31,12 +37,16 @@
         .log-agent { color: #58a6ff; }
         .log-success { color: #238636; }
         .loading { text-align: center; padding: 40px; color: #8b949e; }
+        .error { text-align: center; padding: 20px; color: #da3633; background: rgba(218, 54, 51, 0.1); border-radius: 8px; margin: 10px 0; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>🐺 狼牙团队监控仪表盘</h1>
-        <button class="refresh-btn" onclick="loadData()">🔄 刷新数据</button>
+        <div class="header-right">
+            <span class="last-update" id="lastUpdate">最后更新: --:--:--</span>
+            <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">🔄 刷新数据</button>
+        </div>
     </div>
     <div class="stats-grid">
         <div class="stat-card"><div class="stat-label">活跃代理</div><div class="stat-value" id="activeAgents">-</div></div>
@@ -61,47 +71,135 @@
     </div>
     <script>
         const API = '/api/v1/dashboard';
-        async function loadData() {
+        let isLoading = false;
+        let autoRefreshInterval = null;
+        
+        // 自动刷新间隔：30秒
+        const AUTO_REFRESH_INTERVAL = 30000;
+        
+        async function loadData(showLoading = false) {
+            if (isLoading) return;
+            isLoading = true;
+            
+            const btn = document.getElementById('refreshBtn');
+            if (showLoading) {
+                btn.disabled = true;
+                btn.classList.add('loading');
+                btn.textContent = '🔄 刷新中';
+            }
+            
             try {
                 const [dashRes, agentRes, taskRes, logRes] = await Promise.all([
                     fetch(API), fetch(API + '/agents'), fetch(API + '/tasks'), fetch(API + '/logs')
                 ]);
-                const dash = await dashRes.json(), agent = await agentRes.json(), task = await taskRes.json(), log = await logRes.json();
                 
-                document.getElementById('activeAgents').textContent = dash.data.agentStats.online + '/' + dash.data.agentStats.total;
-                document.getElementById('completedToday').textContent = dash.data.taskStats.completed;
-                document.getElementById('pendingTasks').textContent = dash.data.taskStats.pending;
-                document.getElementById('uptime').textContent = dash.data.systemStatus.uptime;
+                if (!dashRes.ok || !agentRes.ok || !taskRes.ok || !logRes.ok) {
+                    throw new Error('API 返回错误状态');
+                }
                 
+                const dash = await dashRes.json();
+                const agent = await agentRes.json();
+                const task = await taskRes.json();
+                const log = await logRes.json();
+                
+                // 更新统计数据
+                document.getElementById('activeAgents').textContent = dash.data?.agentStats?.online + '/' + dash.data?.agentStats?.total || '-/-';
+                document.getElementById('completedToday').textContent = dash.data?.taskStats?.completed || '0';
+                document.getElementById('pendingTasks').textContent = dash.data?.taskStats?.pending || '0';
+                document.getElementById('uptime').textContent = dash.data?.systemStatus?.uptime || '-';
+                
+                // 更新代理列表
                 document.getElementById('agentGrid').innerHTML = (agent.data || []).map(a => `
                     <div class="agent-card">
                         <div class="agent-name">${a.emoji || '🐺'} ${a.name}</div>
                         <div class="agent-role">${a.role}</div>
-                        <div class="agent-status">${a.statusText}</div>
+                        <div class="agent-status">${a.statusText || '未知状态'}</div>
                     </div>
-                `).join('');
+                `).join('') || '<div class="loading">暂无数据</div>';
                 
+                // 更新任务列表
                 document.getElementById('taskList').innerHTML = (task.data || []).map(t => `
                     <tr>
-                        <td>${t.time}</td><td>${t.assignee}</td><td>${t.task}</td>
+                        <td>${t.time || '--:--'}</td>
+                        <td>${t.assignee || '-'}</td>
+                        <td>${t.task || '-'}</td>
                         <td><span class="${t.priority === 'HIGH' ? 'priority-high' : 'priority-medium'}">${t.priority === 'HIGH' ? '高' : '中'}</span></td>
-                        <td>${t.status === 'PENDING' ? '⏳ 待执行' : t.status === 'COMPLETED' ? '✓ 已完成' : '▶ 执行中'}</td>
+                        <td>${t.status === 'PENDING' ? '⏳ 待执行' : t.status === 'COMPLETED' ? '✓ 已完成' : t.status === 'IN_PROGRESS' ? '▶ 执行中' : '-'}</td>
                     </tr>
-                `).join('');
+                `).join('') || '<tr><td colspan="5" class="loading">暂无任务</td></tr>';
                 
+                // 更新日志
                 document.getElementById('logList').innerHTML = (log.data || []).map(l => `
                     <div class="log-entry">
-                        <span class="log-time">${l.time}</span>
-                        <span class="log-agent">${l.agent}</span>
-                        <span>${l.action}</span>
+                        <span class="log-time">${l.time || '--:--'}</span>
+                        <span class="log-agent">${l.agent || '-'}</span>
+                        <span>${l.action || '-'}</span>
                         <span class="log-success">✓ ${l.status === 'success' ? '成功' : '失败'}</span>
                     </div>
-                `).join('');
-            } catch (e) { console.error(e); }
+                `).join('') || '<div class="loading">暂无日志</div>';
+                
+                // 更新最后刷新时间
+                updateLastRefreshTime();
+                
+            } catch (e) {
+                console.error('加载数据失败:', e);
+                document.getElementById('logList').innerHTML = `<div class="error">加载失败: ${e.message}</div>`;
+            } finally {
+                isLoading = false;
+                if (showLoading) {
+                    btn.disabled = false;
+                    btn.classList.remove('loading');
+                    btn.textContent = '🔄 刷新数据';
+                }
+            }
         }
-        loadData(); setInterval(loadData, 30000);
+        
+        function refreshData() {
+            loadData(true);
+        }
+        
+        function updateLastRefreshTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-CN', { hour12: false });
+            document.getElementById('lastUpdate').textContent = `最后更新: ${timeStr}`;
+        }
+        
+        function startAutoRefresh() {
+            // 清除现有的定时器
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            // 启动新的定时器
+            autoRefreshInterval = setInterval(() => {
+                console.log('自动刷新数据...');
+                loadData(false);
+            }, AUTO_REFRESH_INTERVAL);
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+        
+        // 页面可见性变化时控制自动刷新
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                console.log('页面隐藏，暂停自动刷新');
+                stopAutoRefresh();
+            } else {
+                console.log('页面显示，恢复自动刷新');
+                startAutoRefresh();
+                loadData(false); // 立即刷新一次
+            }
+        });
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData(true); // 首次加载显示 loading
+            startAutoRefresh(); // 启动自动刷新
+        });
     </script>
 </body>
 </html>
-// Auto-deploy enabled: 2026-03-07 03:09:32
-// Redeploy: 2026-03-07 03:21:31

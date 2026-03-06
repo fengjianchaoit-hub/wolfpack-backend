@@ -129,17 +129,31 @@ public class SystemMetricsCollector {
     }
 
     /**
-     * 获取系统运行时间
+     * 获取系统运行时间（从 Linux /proc/uptime 读取真实系统运行时间）
      */
     public String getUptime() {
-        Duration duration = Duration.between(jvmStartTime, LocalDateTime.now());
-        long days = duration.toDays();
-        long hours = duration.toHours() % 24;
-        long minutes = duration.toMinutes() % 60;
-        
-        if (days > 0) {
-            return String.format("%dd %dh %dm", days, hours, minutes);
+        try (BufferedReader reader = new BufferedReader(new FileReader("/proc/uptime"))) {
+            String line = reader.readLine();
+            if (line != null) {
+                // /proc/uptime 第一列是系统运行秒数
+                double uptimeSeconds = Double.parseDouble(line.split("\\s+")[0]);
+                long totalMinutes = (long) (uptimeSeconds / 60);
+                long days = totalMinutes / (24 * 60);
+                long hours = (totalMinutes % (24 * 60)) / 60;
+                long minutes = totalMinutes % 60;
+                
+                if (days > 0) {
+                    return String.format("%dd %dh %dm", days, hours, minutes);
+                }
+                return String.format("%dh %dm", hours, minutes);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to read /proc/uptime: {}", e.getMessage());
         }
+        // 备用：使用 JVM 时间
+        Duration duration = Duration.between(jvmStartTime, LocalDateTime.now());
+        long hours = duration.toHours();
+        long minutes = duration.toMinutes() % 60;
         return String.format("%dh %dm", hours, minutes);
     }
 
