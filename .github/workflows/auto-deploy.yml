@@ -34,15 +34,15 @@ jobs:
         docker build -t wolfpack-backend:latest .
         docker save wolfpack-backend:latest | gzip > wolfpack-backend.tar.gz
     
-    # 5. 上传后端代码到服务器
-    - name: Upload Backend to Server
+    # 5. 上传后端镜像到服务器
+    - name: Upload Backend Image to Server
       uses: appleboy/scp-action@master
       with:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
-        source: "wolfpack-backend/wolfpack-backend.tar.gz,wolfpack-backend/docker-compose.yml"
+        source: "wolfpack-backend/wolfpack-backend.tar.gz"
         target: "/opt/wolfpack-java/"
         strip_components: 1
     
@@ -58,7 +58,7 @@ jobs:
         target: "/opt/wolfpack-dashboard/html/"
         strip_components: 1
     
-    # 7. 部署到服务器（Docker Compose全栈）
+    # 7. 部署到服务器（Docker 纯命令部署）
     - name: Deploy to Server
       uses: appleboy/ssh-action@master
       with:
@@ -67,46 +67,62 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         script: |
-          echo "=== 检查 Docker 和 Docker Compose ==="
-          docker --version
-          docker-compose --version || docker compose version
-          
           echo "=== 加载后端镜像 ==="
           cd /opt/wolfpack-java
           docker load < wolfpack-backend.tar.gz
           docker images | grep wolfpack-backend
           
-          echo "=== 清理旧容器 ==="
-          docker stop wolfpack-backend wolfpack-postgres 2>/dev/null || true
-          docker rm wolfpack-backend wolfpack-postgres 2>/dev/null || true
+          echo "=== 创建 Docker 网络（如果不存在）==="
+          docker network create wolfpack-network 2>/dev/null || true
           
-          echo "=== 启动全栈服务（PostgreSQL + Backend + Nginx）==="
-          # 使用 docker compose（新版）或 docker-compose（旧版）
-          if docker compose version &>/dev/null; then
-            echo "Using: docker compose"
-            docker compose down 2>/dev/null || true
-            docker compose up -d
-          else
-            echo "Using: docker-compose"
-            docker-compose down 2>/dev/null || true
-            docker-compose up -d
-          fi
+          echo "=== 启动 PostgreSQL ==="
+          docker stop wolfpack-postgres 2>/dev/null || true
+          docker rm wolfpack-postgres 2>/dev/null || true
+          docker run -d \
+            --name wolfpack-postgres \
+            --network wolfpack-network \
+            -e POSTGRES_DB=wolfpack \
+            -e POSTGRES_USER=wolfpack \
+            -e POSTGRES_PASSWORD=wolfpack123 \
+            -v postgres_data:/var/lib/postgresql/data \
+            -p 5432:5432 \
+            --restart unless-stopped \
+            postgres:15-alpine
           
-          echo "=== 等待服务启动（30秒）==="
-          sleep 30
+          echo "=== 等待 PostgreSQL 就绪（15秒）==="
+          sleep 15
+          
+          echo "=== 启动后端服务 ==="
+          docker stop wolfpack-backend 2>/dev/null || true
+          docker rm wolfpack-backend 2>/dev/null || true
+          docker run -d \
+            --name wolfpack-backend \
+            --network wolfpack-network \
+            -e SPRING_PROFILES_ACTIVE=prod \
+            -e SPRING_DATASOURCE_URL=jdbc:postgresql://wolfpack-postgres:5432/wolfpack \
+            -e SPRING_DATASOURCE_USERNAME=wolfpack \
+            -e SPRING_DATASOURCE_PASSWORD=wolfpack123 \
+            -p 8080:8080 \
+            --restart unless-stopped \
+            wolfpack-backend:latest
+          
+          echo "=== 重启 Nginx（连接后端）==="
+          docker restart wolfpack-frontend || true
+          
+          echo "=== 等待服务启动（20秒）==="
+          sleep 20
           
           echo "=== 容器状态 ==="
           docker ps -a | grep wolfpack
           
-          echo "=== PostgreSQL 日志（最近20行）==="
-          docker logs wolfpack-postgres --tail 20 2>/dev/null || echo "PostgreSQL 容器未运行"
+          echo "=== PostgreSQL 日志（最近10行）==="
+          docker logs wolfpack-postgres --tail 10 2>/dev/null || echo "PostgreSQL 未运行"
           
           echo "=== 后端日志（最近20行）==="
-          docker logs wolfpack-backend --tail 20 2>/dev/null || echo "后端容器未运行"
+          docker logs wolfpack-backend --tail 20 2>/dev/null || echo "后端未运行"
           
           echo "=== 健康检查 ==="
           curl -s http://localhost:8080/api/v1/dashboard/health || echo "后端健康检查失败"
-          curl -s http://localhost:80 | grep -o "狼牙团队" | head -1 || echo "前端检查失败"
           
           echo "=== 部署完成 ==="
     
