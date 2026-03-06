@@ -1,9 +1,11 @@
 package com.wolfpack.admin.service;
 
 import com.wolfpack.admin.entity.Agent;
-import com.wolfpack.admin.repository.AgentRepository;
-import com.wolfpack.admin.repository.ExecutionLogRepository;
-import com.wolfpack.admin.repository.TaskRepository;
+import com.wolfpack.admin.entity.ExecutionLog;
+import com.wolfpack.admin.entity.Task;
+import com.wolfpack.admin.repository.AgentJpaRepository;
+import com.wolfpack.admin.repository.ExecutionLogJpaRepository;
+import com.wolfpack.admin.repository.TaskJpaRepository;
 import com.wolfpack.admin.util.SystemMetricsCollector;
 import com.wolfpack.api.dto.DashboardDTO;
 import com.wolfpack.api.enums.AgentStatus;
@@ -13,32 +15,37 @@ import com.wolfpack.api.vo.TaskVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 仪表盘服务 - 真实数据版本
+ * 仪表盘服务 - 数据库持久化版本
+ * 所有指标数据从数据库读取，禁止写死造假
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class DashboardService {
 
-    private final AgentRepository agentRepository;
-    private final TaskRepository taskRepository;
-    private final ExecutionLogRepository logRepository;
+    private final AgentJpaRepository agentRepository;
+    private final TaskJpaRepository taskRepository;
+    private final ExecutionLogJpaRepository logRepository;
     private final SystemMetricsCollector metricsCollector;
+
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     public DashboardDTO getDashboardData() {
         DashboardDTO dto = new DashboardDTO();
         dto.setAgentStats(getAgentStats());
         dto.setTaskStats(getTaskStats());
         dto.setSystemStatus(getSystemStatus());
-        dto.setUpdateTime(java.time.LocalDateTime.now().toString());
+        dto.setUpdateTime(LocalDateTime.now().toString());
         return dto;
     }
 
@@ -49,7 +56,9 @@ public class DashboardService {
     }
 
     public List<TaskVO> getTaskList() {
-        return taskRepository.findAll();
+        return taskRepository.findAll().stream()
+            .map(this::convertToTaskVO)
+            .collect(Collectors.toList());
     }
 
     public List<TaskVO> getAllTasks() {
@@ -61,43 +70,61 @@ public class DashboardService {
     }
 
     public List<Map<String, Object>> getExecutionLogs() {
-        return logRepository.findRecent(50).stream()
-            .map(log -> {
-                Map<String, Object> map = new HashMap<>();
-                map.put("time", log.getTime());
-                map.put("agent", log.getAgent());
-                map.put("action", log.getAction());
-                map.put("status", log.getStatus());
-                return map;
-            })
+        return logRepository.findTop50ByOrderByCreatedAtDesc().stream()
+            .map(this::convertLogToMap)
             .collect(Collectors.toList());
     }
 
     public Map<String, Object> getHealthStatus() {
         Map<String, Object> health = new HashMap<>();
         health.put("status", "ok");
-        health.put("timestamp", java.time.LocalDateTime.now().toString());
+        health.put("timestamp", LocalDateTime.now().toString());
         health.put("version", "1.0.0");
         health.put("uptime", metricsCollector.getUptime());
         return health;
     }
 
-    // 更新代理状态（供OpenClaw回调使用）
+    // ==================== 数据更新接口（供OpenClaw回调）====================
+
+    @Transactional
     public void updateAgentStatus(String agentId, AgentStatus status, String statusText) {
-        agentRepository.updateStatus(agentId, status, statusText);
+        Agent agent = agentRepository.findById(agentId)
+            .orElseThrow(() -> new RuntimeException("Agent not found: " + agentId));
+        agent.setStatus(status);
+        agent.setStatusText(statusText);
+        agent.setLastActiveTime(LocalDateTime.now());
+        agentRepository.save(agent);
         log.info("Updated agent {} status to {}: {}", agentId, status, statusText);
     }
 
-    // 更新任务状态（供OpenClaw回调使用）
+    @Transactional
     public void updateTaskStatus(String taskId, TaskStatus status) {
-        taskRepository.updateStatus(taskId, status);
+        Task task = taskRepository.findById(taskId)
+            .orElseThrow(() -> new RuntimeException("Task not found: " + taskId));
+        task.setStatus(status);
+        if (status == TaskStatus.COMPLETED) {
+            task.setCompletedAt(LocalDateTime.now());
+        }
+        taskRepository.save(task);
         log.info("Updated task {} status to {}", taskId, status);
     }
 
-    // 添加执行日志（供OpenClaw回调使用）
+    @Transactional
     public void addExecutionLog(String agentId, String action, String status, String details) {
-        logRepository.addLog(agentId, action, status, details);
+        Agent agent = agentRepository.findById(agentId).orElse(null);
+        
+        ExecutionLog log = new ExecutionLog();
+        log.setAgentId(agentId);
+        log.setAgentName(agent != null ? agent.getName() : agentId);
+        log.setAction(action);
+        log.setStatus(status);
+        log.setDetails(details);
+        logRepository.save(log);
+        
+        log.info("Added execution log: {} - {}", agentId, action);
     }
+
+    // ==================== 内部转换方法 ====================
 
     private AgentVO convertToAgentVO(Agent agent) {
         AgentVO vo = new AgentVO();
@@ -109,13 +136,13 @@ public class DashboardService {
         vo.setStatus(agent.getStatus());
         vo.setStatusText(agent.getStatusText());
         
-        // 获取代理的任务列表
-        List<TaskVO> tasks = taskRepository.findByAssignee(agent.getName());
+        // 从数据库查询该代理的任务
+        List<Task> tasks = taskRepository.findByAssigneeId(agent.getId());
         if (tasks != null && !tasks.isEmpty()) {
             vo.setTasks(tasks.stream()
                 .map(t -> {
                     AgentVO.TaskItem item = new AgentVO.TaskItem();
-                    item.setText(t.getTask());
+                    item.setText(t.getTitle());
                     item.setStatus(t.getStatus().name().toLowerCase());
                     return item;
                 })
@@ -124,6 +151,32 @@ public class DashboardService {
         
         return vo;
     }
+
+    private TaskVO convertToTaskVO(Task task) {
+        TaskVO vo = new TaskVO();
+        vo.setId(task.getId());
+        vo.setTime(task.getScheduledTime());
+        
+        // 从数据库查询代理人名称
+        Agent agent = agentRepository.findById(task.getAssigneeId()).orElse(null);
+        vo.setAssignee(agent != null ? agent.getName() : task.getAssigneeId());
+        
+        vo.setTask(task.getTitle());
+        vo.setPriority(task.getPriority());
+        vo.setStatus(task.getStatus());
+        return vo;
+    }
+
+    private Map<String, Object> convertLogToMap(ExecutionLog log) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("time", log.getCreatedAt() != null ? log.getCreatedAt().format(TIME_FORMATTER) : "--:--");
+        map.put("agent", log.getAgentName());
+        map.put("action", log.getAction());
+        map.put("status", log.getStatus());
+        return map;
+    }
+
+    // ==================== 统计数据（全部从数据库计算）====================
 
     private DashboardDTO.AgentStats getAgentStats() {
         List<Agent> agents = agentRepository.findAll();
@@ -138,7 +191,7 @@ public class DashboardService {
     }
 
     private DashboardDTO.TaskStats getTaskStats() {
-        List<TaskVO> tasks = taskRepository.findAll();
+        List<Task> tasks = taskRepository.findAll();
         long completed = tasks.stream().filter(t -> t.getStatus() == TaskStatus.COMPLETED).count();
         long pending = tasks.stream().filter(t -> t.getStatus() == TaskStatus.PENDING).count();
         long inProgress = tasks.stream().filter(t -> t.getStatus() == TaskStatus.IN_PROGRESS).count();
