@@ -118,6 +118,8 @@ public class DashboardService {
         task.setScheduledTime(scheduledTime);
         task.setDescription(description);
         task.setIsCronJob(false);
+        task.setCreatedAt(LocalDateTime.now()); // 手动设置创建时间
+        task.setUpdatedAt(LocalDateTime.now());
         taskRepository.save(task);
         
         // 自动记录任务创建日志
