@@ -113,13 +113,13 @@ public class DashboardService {
     public void addExecutionLog(String agentId, String action, String status, String details) {
         Agent agent = agentRepository.findById(agentId).orElse(null);
         
-        ExecutionLog log = new ExecutionLog();
-        log.setAgentId(agentId);
-        log.setAgentName(agent != null ? agent.getName() : agentId);
-        log.setAction(action);
-        log.setStatus(status);
-        log.setDetails(details);
-        logRepository.save(log);
+        ExecutionLog executionLog = new ExecutionLog();
+        executionLog.setAgentId(agentId);
+        executionLog.setAgentName(agent != null ? agent.getName() : agentId);
+        executionLog.setAction(action);
+        executionLog.setStatus(status);
+        executionLog.setDetails(details);
+        logRepository.save(executionLog);
         
         log.info("Added execution log: {} - {}", agentId, action);
     }
