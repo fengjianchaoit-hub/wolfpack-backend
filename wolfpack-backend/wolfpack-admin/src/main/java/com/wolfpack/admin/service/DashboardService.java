@@ -38,8 +38,7 @@ public class DashboardService {
     private final ExecutionLogJpaRepository logRepository;
     private final SystemMetricsCollector metricsCollector;
 
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("MM-dd HH:mm")
-        .withZone(java.time.ZoneId.of("Asia/Shanghai"));
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("MM-dd HH:mm");
 
     public DashboardDTO getDashboardData() {
         DashboardDTO dto = new DashboardDTO();
