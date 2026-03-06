@@ -122,6 +122,15 @@
 - 我的身份：狼头（下属/执行者）
 - 狼牙01/02/03 均为老板下属的团队成员，由我（狼头）管理，向老板汇报
 
+### 工作纪律（2026-03-07 老板明确指令）
+- **协议即落地** — 核心意见一旦达成，**第一时间**写入对应规范手册，不等提醒，不问是否
+- **禁止等催办** — 不能等老板提醒才更新文档，要主动完成
+- 违反后果：视为工作失职
+
+**示例场景**：
+- ❌ 错误：老板说"把pull加进流程"，我答应后需要老板追问"写入手册了吗"才去写
+- ✅ 正确：老板说"把pull加进流程"，我立即在对话中确认"已更新DEPLOYMENT_HANDBOOK.md"，无需二次提醒
+
 ---
 
 ## 待办事项
@@ -189,17 +198,19 @@
 **状态**: ✅ 端到端全自动部署已启用并验证成功
 
 ### 核心方法论（8字诀）
-> **"本地→远程→自动→呈现"**
+> **"同步→本地→远程→自动→呈现"**
 
 ```
-本地验证代码正确 → Push到GitHub → Actions自动部署 → 用户看到结果
+git pull 同步最新代码 → 本地验证修改正确 → Push到GitHub → Actions自动部署 → 用户看到结果
 ```
 
 ### 工作流程
-1. **本地**: 代码保存在 `/root/.openclaw/workspace/`
-2. **远程**: Push 到 `git@github.com:fengjianchaoit-hub/wolfpack-backend.git`
-3. **自动**: GitHub Actions 触发部署（`.github/workflows/auto-deploy.yml`）
-4. **呈现**: 2-3分钟后访问 http://47.84.71.25 查看结果
+1. **同步**: `git pull origin main` 拉取远程最新代码
+2. **本地**: 在 `/root/.openclaw/workspace/` 修改代码
+3. **提交**: `git add . && git commit -m "描述"`
+4. **远程**: `git push origin main` 推送到 `git@github.com:fengjianchaoit-hub/wolfpack-backend.git`
+5. **自动**: GitHub Actions 触发部署（`.github/workflows/auto-deploy.yml`）
+6. **呈现**: 2-3分钟后访问 http://47.84.71.25 查看结果
 
 ### 关键配置
 | Secret Name | 说明 |
@@ -224,8 +235,19 @@
 
 ### 工作流程
 ```
-本地代码修改 → git push → GitHub Actions自动触发 → 构建 → 部署到服务器 → 完成
+git pull → 本地代码修改 → git add → git commit → git push → GitHub Actions自动触发 → 构建 → 部署到服务器 → 完成
 ```
+
+### 详细步骤
+| 步骤 | 命令 | 说明 |
+|------|------|------|
+| **1. 拉取** | `git pull origin main` | 先同步远程最新代码，避免冲突 |
+| **2. 开发** | - | 本地修改代码 |
+| **3. 暂存** | `git add .` | 添加修改到暂存区 |
+| **4. 提交** | `git commit -m "描述"` | 提交到本地仓库 |
+| **5. 推送** | `git push origin main` | 推送到远程仓库 |
+| **6. 自动** | GitHub Actions | 自动触发构建和部署 |
+| **7. 呈现** | http://47.84.71.25 | 2-3分钟后查看结果 |
 
 ### 关键配置
 | Secret Name | Value |

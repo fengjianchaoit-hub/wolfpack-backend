@@ -12,27 +12,35 @@
 所有代码变更必须遵循以下流程，**无任何例外**：
 
 ```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   1. 本地验证    │ ──► │  2. Push到远程   │ ──► │  3. 自动部署    │
-│                 │     │                 │     │                 │
-│ • 代码正确      │     │ • GitHub仓库    │     │ • Actions触发   │
-│ • 功能完整      │     │ • 提交信息清晰   │     │ • 自动构建      │
-│ • 本地测试通过   │     │                 │     │ • 自动部署      │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-   我的工作区              GitHub远程               服务器生产环境
-   /workspace              wolfpack-backend         47.84.71.25
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  1. 同步代码    │ ──► │  2. 本地验证    │ ──► │  3. Push到远程   │ ──► │  4. 自动部署    │
+│                 │     │                 │     │                 │     │                 │
+│ • git pull      │     │ • 代码正确      │     │ • GitHub仓库    │     │ • Actions触发   │
+│ • 同步最新      │     │ • 功能完整      │     │ • 提交信息清晰   │     │ • 自动构建      │
+│   远程代码      │     │ • 本地测试通过   │     │                 │     │ • 自动部署      │
+└─────────────────┘     └─────────────────┘     └─────────────────┘     └─────────────────┘
+         │                       │                       │                       │
+         ▼                       ▼                       ▼                       ▼
+   拉取远程更新           我的工作区              GitHub远程               服务器生产环境
+   origin/main            /workspace              wolfpack-backend         47.84.71.25
 ```
 
-### 1.2 执行标准
+### 1.2 核心口诀（8字诀）
+> **"同步→本地→远程→自动→呈现"**
+
+```
+git pull 同步最新代码 → 本地验证修改正确 → Push到GitHub → Actions自动部署 → 用户看到结果
+```
+
+### 1.3 执行标准
 | 阶段 | 负责人 | 交付标准 | 验证方式 |
 |------|--------|----------|----------|
-| **1. 本地** | 我（狼头） | 代码可运行，功能符合需求 | 本地构建通过 |
-| **2. 远程** | GitHub | 代码已提交，Commit清晰 | git log确认 |
-| **3. 服务器** | GitHub Actions | 部署成功，服务健康 | Health API返回200 |
+| **1. 同步** | 我（狼头） | 拉取远程最新代码，无冲突 | `git log` 确认最新 |
+| **2. 本地** | 我（狼头） | 代码可运行，功能符合需求 | 本地构建通过 |
+| **3. 远程** | GitHub | 代码已提交，Commit清晰 | `git log` 确认 |
+| **4. 服务器** | GitHub Actions | 部署成功，服务健康 | Health API返回200 |
 
-### 1.3 用户等待时间
+### 1.4 用户等待时间
 **用户（老板）只需等待**：Push后 **2-3分钟** 即可看到页面功能呈现
 
 ---
@@ -89,33 +97,36 @@
 
 ### 3.1 代码变更流程
 ```bash
-# Step 1: 本地修改代码
+# Step 1: 同步远程最新代码（必须先执行！）
+GIT_SSH_COMMAND="ssh -i ~/.ssh/github_wolfpack -o StrictHostKeyChecking=no" git pull origin main
+
+# Step 2: 本地修改代码
 vim wolfpack-backend/.../XXX.java
 vim wolfpack-dashboard/index.html
 
-# Step 2: 本地验证（快速检查）
+# Step 3: 本地验证（快速检查）
 cd wolfpack-backend && mvn clean compile -q
 
-# Step 3: Git提交
+# Step 4: Git提交
 Git add .
 Git commit -m "feat: 清晰描述本次变更"
 GIT_SSH_COMMAND="ssh -i ~/.ssh/github_wolfpack -o StrictHostKeyChecking=no" Git push origin main
 
-# Step 4: 等待自动部署（2-3分钟）
+# Step 5: 等待自动部署（2-3分钟）
 # 无需操作，Actions自动完成
 
-# Step 5: 验证（可选）
+# Step 6: 验证（可选）
 curl http://47.84.71.25:8080/api/v1/dashboard/health
 curl http://47.84.71.25
 ```
 
 ### 3.2 用户指令响应流程
 ```
-用户指令 → 我理解需求 → 本地编码 → 本地验证 → Git Push → 通知用户等待
-                                                            ↓
-                                                  Actions自动部署
-                                                            ↓
-                                                  通知用户完成 + 验证链接
+用户指令 → 我理解需求 → git pull同步 → 本地编码 → 本地验证 → Git Push → 通知用户等待
+                                                                  ↓
+                                                        Actions自动部署
+                                                                  ↓
+                                                        通知用户完成 + 验证链接
 ```
 
 ---
@@ -207,6 +218,7 @@ GIT_SSH_COMMAND="ssh -i ~/.ssh/github_wolfpack -o StrictHostKeyChecking=no" Git 
 ## 五、自我检查清单（每次部署前必查）
 
 ### 5.1 提交前检查
+- [ ] **已执行 `git pull origin main` 同步最新代码**
 - [ ] 代码已在本地保存
 - [ ] 功能逻辑正确
 - [ ] 无敏感信息泄露（密码、Token等）
@@ -248,14 +260,14 @@ GIT_SSH_COMMAND="ssh -i ~/.ssh/github_wolfpack -o StrictHostKeyChecking=no" Git 
 
 ## 八、核心记忆锚点
 
-> **"本地→远程→自动→呈现"**
+> **"同步→本地→远程→自动→呈现"**
 > 
-> 本地验证代码正确，Push到GitHub，Actions自动部署，用户看到结果。
+> git pull 同步最新代码，本地验证修改正确，Push到GitHub，Actions自动部署，用户看到结果。
 > 
-> **不需要记住复杂命令，只需要记住这8个字。**
+> **核心原则：先拉后推（Pull before Push）**
 
 **当用户说"给我做个功能"时，我的标准回答应该是**：
-> "明白，现在开始编写代码，预计X分钟后Push，2-3分钟后您可以直接访问页面查看效果。"
+> "明白，现在先同步最新代码，然后开始编写，预计X分钟后Push，2-3分钟后您可以直接访问页面查看效果。"
 
 ---
 

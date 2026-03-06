@@ -32,6 +32,8 @@ public class DashboardService {
         TaskVO t4 = new TaskVO(); t4.setId("task-004"); t4.setTime("09:00"); t4.setAssignee("狼牙01"); t4.setTask("生成AI热点日报"); t4.setPriority(TaskPriority.HIGH); t4.setStatus(TaskStatus.PENDING); taskCache.add(t4);
         TaskVO t5 = new TaskVO(); t5.setId("task-005"); t5.setTime("10:00"); t5.setAssignee("狼牙02"); t5.setTask("分析昨日直播数据（含行为洞察）"); t5.setPriority(TaskPriority.HIGH); t5.setStatus(TaskStatus.PENDING); taskCache.add(t5);
         TaskVO t6 = new TaskVO(); t6.setId("task-006"); t6.setTime("11:00"); t6.setAssignee("狼牙03"); t6.setTask("生成数据看板（含视觉重点）"); t6.setPriority(TaskPriority.MEDIUM); t6.setStatus(TaskStatus.PENDING); taskCache.add(t6);
+        // 系统级定时任务
+        TaskVO t7 = new TaskVO(); t7.setId("cron-memory-digest"); t7.setTime("每4小时"); t7.setAssignee("狼头"); t7.setTask("记忆归档检查 - 自动总结入库"); t7.setPriority(TaskPriority.HIGH); t7.setStatus(TaskStatus.IN_PROGRESS); taskCache.add(t7);
     }
 
     public DashboardDTO getDashboardData() {
