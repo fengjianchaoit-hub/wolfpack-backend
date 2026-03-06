@@ -180,3 +180,50 @@
 - 前端代码: `/opt/wolfpack-dashboard/html/index.html`
 - 后端API: `/api/v1/dashboard/*`
 
+---
+
+## 代码部署规范（2026-03-07 建立）
+
+**老板指令**: 所有新增代码必须遵循以下流程
+
+### 三步走原则
+1. **本地存在且正确** - 代码在我的工作区验证无误
+2. **同步到远程仓库** - 提交并 Push 到 GitHub
+3. **部署到服务器** - 服务器拉取最新代码并部署
+
+### 标准执行流程
+```bash
+# 1. 本地修改代码（工作区: /root/.openclaw/workspace/）
+# 2. Git提交并Push到远程
+git add .
+git commit -m "feat: 描述"
+git push origin main
+
+# 3. 服务器拉取并部署前端
+cd /tmp && rm -rf wolfpack-backend && git clone git@github.com:fengjianchaoit-hub/wolfpack-backend.git
+cp wolfpack-backend/wolfpack-dashboard/index.html /opt/wolfpack-dashboard/html/index.html
+docker restart wolfpack-frontend
+
+# 后端部署（需要时）
+cd /tmp/wolfpack-backend/wolfpack-backend
+mvn clean package -DskipTests -B
+docker build -t wolfpack-backend:latest .
+docker stop wolfpack-backend && docker rm wolfpack-backend
+docker run -d --name wolfpack-backend -p 8080:8080 --restart unless-stopped -m 512m wolfpack-backend:latest
+```
+
+### 关键配置
+- **SSH密钥**: `~/.ssh/github_wolfpack` (已配置到GitHub)
+- **前端路径**: `/opt/wolfpack-dashboard/html/index.html`
+- **后端端口**: `8080`
+- **前端端口**: `80`
+
+### 验证命令
+```bash
+# 验证后端API
+curl http://localhost:8080/api/v1/dashboard/logs
+
+# 验证前端页面
+curl http://localhost:80 | head -20
+```
+
