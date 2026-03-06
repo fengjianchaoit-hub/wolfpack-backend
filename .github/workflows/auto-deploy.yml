@@ -40,7 +40,7 @@ jobs:
       with:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         source: "wolfpack-backend/wolfpack-backend.tar.gz"
         target: "/opt/wolfpack-java/"
@@ -52,7 +52,7 @@ jobs:
       with:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         source: "wolfpack-dashboard/index.html"
         target: "/opt/wolfpack-dashboard/html/"
@@ -64,7 +64,7 @@ jobs:
       with:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         script: |
           echo "=== 部署后端 ==="
