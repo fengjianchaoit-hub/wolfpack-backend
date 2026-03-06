@@ -184,46 +184,68 @@
 
 ## 代码部署规范（2026-03-07 建立）
 
-**老板指令**: 所有新增代码必须遵循以下流程
+**📖 核心文档**: `DEPLOYMENT_HANDBOOK.md`（唯一标准，强制执行）
 
-### 三步走原则
-1. **本地存在且正确** - 代码在我的工作区验证无误
-2. **同步到远程仓库** - 提交并 Push 到 GitHub
-3. **部署到服务器** - 服务器拉取最新代码并部署
+**状态**: ✅ 端到端全自动部署已启用并验证成功
 
-### 标准执行流程
-```bash
-# 1. 本地修改代码（工作区: /root/.openclaw/workspace/）
-# 2. Git提交并Push到远程
-git add .
-git commit -m "feat: 描述"
-git push origin main
+### 核心方法论（8字诀）
+> **"本地→远程→自动→呈现"**
 
-# 3. 服务器拉取并部署前端
-cd /tmp && rm -rf wolfpack-backend && git clone git@github.com:fengjianchaoit-hub/wolfpack-backend.git
-cp wolfpack-backend/wolfpack-dashboard/index.html /opt/wolfpack-dashboard/html/index.html
-docker restart wolfpack-frontend
+```
+本地验证代码正确 → Push到GitHub → Actions自动部署 → 用户看到结果
+```
 
-# 后端部署（需要时）
-cd /tmp/wolfpack-backend/wolfpack-backend
-mvn clean package -DskipTests -B
-docker build -t wolfpack-backend:latest .
-docker stop wolfpack-backend && docker rm wolfpack-backend
-docker run -d --name wolfpack-backend -p 8080:8080 --restart unless-stopped -m 512m wolfpack-backend:latest
+### 工作流程
+1. **本地**: 代码保存在 `/root/.openclaw/workspace/`
+2. **远程**: Push 到 `git@github.com:fengjianchaoit-hub/wolfpack-backend.git`
+3. **自动**: GitHub Actions 触发部署（`.github/workflows/auto-deploy.yml`）
+4. **呈现**: 2-3分钟后访问 http://47.84.71.25 查看结果
+
+### 关键配置
+| Secret Name | 说明 |
+|-------------|------|
+| `SERVER_HOST` | 47.84.71.25 |
+| `SERVER_USER` | root |
+| `SSH_PRIVATE_KEY` | 服务器私钥 |
+
+### 废弃方案（不再使用）
+- ~~手动SSH部署~~
+- ~~半自动Pull部署~~
+- ~~SERVER_SSH_KEY命名~~
+- ~~多workflow文件~~
+
+**所有部署操作必须遵循 `DEPLOYMENT_HANDBOOK.md`**
+
+---
+
+## 端到端全自动部署（2026-03-07 启用）
+
+**状态**: ✅ 已启用并验证成功
+
+### 工作流程
+```
+本地代码修改 → git push → GitHub Actions自动触发 → 构建 → 部署到服务器 → 完成
 ```
 
 ### 关键配置
-- **SSH密钥**: `~/.ssh/github_wolfpack` (已配置到GitHub)
-- **前端路径**: `/opt/wolfpack-dashboard/html/index.html`
-- **后端端口**: `8080`
-- **前端端口**: `80`
+| Secret Name | Value |
+|-------------|-------|
+| `SERVER_HOST` | 47.84.71.25 |
+| `SERVER_USER` | root |
+| `SERVER_PORT` | 22 |
+| `SSH_PRIVATE_KEY` | 服务器私钥完整内容 |
 
-### 验证命令
+### 服务器SSH配置
 ```bash
-# 验证后端API
-curl http://localhost:8080/api/v1/dashboard/logs
-
-# 验证前端页面
-curl http://localhost:80 | head -20
+# 确保公钥在authorized_keys中
+cat ~/.ssh/id_ed25519.pub >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
 ```
+
+### Workflow文件
+`.github/workflows/auto-deploy.yml` - 包含完整构建和部署流程
+
+### 部署时间
+- 代码Push后约 **2-3分钟** 自动完成部署
+- 无需人工干预
 
