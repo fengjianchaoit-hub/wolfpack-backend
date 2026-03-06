@@ -67,21 +67,46 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         script: |
+          echo "=== 检查 Docker 和 Docker Compose ==="
+          docker --version
+          docker-compose --version || docker compose version
+          
           echo "=== 加载后端镜像 ==="
           cd /opt/wolfpack-java
           docker load < wolfpack-backend.tar.gz
+          docker images | grep wolfpack-backend
+          
+          echo "=== 清理旧容器 ==="
+          docker stop wolfpack-backend wolfpack-postgres 2>/dev/null || true
+          docker rm wolfpack-backend wolfpack-postgres 2>/dev/null || true
           
           echo "=== 启动全栈服务（PostgreSQL + Backend + Nginx）==="
-          docker-compose down 2>/dev/null || true
-          docker-compose up -d
+          # 使用 docker compose（新版）或 docker-compose（旧版）
+          if docker compose version &>/dev/null; then
+            echo "Using: docker compose"
+            docker compose down 2>/dev/null || true
+            docker compose up -d
+          else
+            echo "Using: docker-compose"
+            docker-compose down 2>/dev/null || true
+            docker-compose up -d
+          fi
           
-          echo "=== 等待服务启动 ==="
-          sleep 20
+          echo "=== 等待服务启动（30秒）==="
+          sleep 30
+          
+          echo "=== 容器状态 ==="
+          docker ps -a | grep wolfpack
+          
+          echo "=== PostgreSQL 日志（最近20行）==="
+          docker logs wolfpack-postgres --tail 20 2>/dev/null || echo "PostgreSQL 容器未运行"
+          
+          echo "=== 后端日志（最近20行）==="
+          docker logs wolfpack-backend --tail 20 2>/dev/null || echo "后端容器未运行"
           
           echo "=== 健康检查 ==="
-          curl -s http://localhost:8080/api/v1/dashboard/health | grep -q "ok" && echo "✅ 后端正常" || echo "❌ 后端异常"
-          curl -s http://localhost:80 | grep -q "狼牙团队" && echo "✅ 前端正常" || echo "❌ 前端异常"
-          docker-compose ps
+          curl -s http://localhost:8080/api/v1/dashboard/health || echo "后端健康检查失败"
+          curl -s http://localhost:80 | grep -o "狼牙团队" | head -1 || echo "前端检查失败"
           
           echo "=== 部署完成 ==="
     
