@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -55,15 +54,6 @@ public class DashboardService {
     }
 
     public List<TaskVO> getTaskList() { return new ArrayList<>(taskCache); }
-    
-    public List<Map<String, Object>> getExecutionLogs() {
-        List<Map<String, Object>> logs = new ArrayList<>();
-        Map<String, Object> log1 = new HashMap<>(); log1.put("time", "15:07"); log1.put("agent", "狼头"); log1.put("action", "创建狼牙03"); log1.put("status", "success"); logs.add(log1);
-        Map<String, Object> log2 = new HashMap<>(); log2.put("time", "14:30"); log2.put("agent", "狼头"); log2.put("action", "仪表盘前端部署"); log2.put("status", "success"); logs.add(log2);
-        Map<String, Object> log3 = new HashMap<>(); log3.put("time", "10:15"); log3.put("agent", "狼牙02"); log3.put("action", "抖音直播数据检查完成"); log3.put("status", "success"); logs.add(log3);
-        Map<String, Object> log4 = new HashMap<>(); log4.put("time", "09:30"); log4.put("agent", "狼牙01"); log4.put("action", "AI热点日报生成完成"); log4.put("status", "success"); logs.add(log4);
-        return logs;
-    }
     
     public List<Map<String, Object>> getExecutionLogs() {
         List<Map<String, Object>> logs = new ArrayList<>();
