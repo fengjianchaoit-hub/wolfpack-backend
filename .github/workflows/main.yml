@@ -57,11 +57,13 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: docker-image
+        path: ./ 
     
     - name: Download Docker Compose
       uses: actions/download-artifact@v4
       with:
         name: docker-compose
+        path: ./ 
     
     - name: Deploy to Server
       uses: appleboy/scp-action@master
