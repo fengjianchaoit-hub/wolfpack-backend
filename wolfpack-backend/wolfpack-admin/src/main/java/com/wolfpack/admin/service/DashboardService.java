@@ -1,108 +1,163 @@
 package com.wolfpack.admin.service;
 
+import com.wolfpack.admin.entity.Agent;
+import com.wolfpack.admin.repository.AgentRepository;
+import com.wolfpack.admin.repository.ExecutionLogRepository;
+import com.wolfpack.admin.repository.TaskRepository;
+import com.wolfpack.admin.util.SystemMetricsCollector;
 import com.wolfpack.api.dto.DashboardDTO;
 import com.wolfpack.api.enums.AgentStatus;
-import com.wolfpack.api.enums.TaskPriority;
 import com.wolfpack.api.enums.TaskStatus;
 import com.wolfpack.api.vo.AgentVO;
 import com.wolfpack.api.vo.TaskVO;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+/**
+ * 仪表盘服务 - 真实数据版本
+ */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class DashboardService {
 
-    private static final LocalDateTime SYSTEM_START_TIME = LocalDateTime.now().minusHours(72).minusMinutes(15);
-    private List<TaskVO> taskCache = new ArrayList<>();
-    
-    public DashboardService() { initTasks(); }
-
-    private void initTasks() {
-        TaskVO t1 = new TaskVO(); t1.setId("task-001"); t1.setTime("09:00"); t1.setAssignee("狼牙01"); t1.setTask("AI热点日报生成"); t1.setPriority(TaskPriority.HIGH); t1.setStatus(TaskStatus.COMPLETED); taskCache.add(t1);
-        TaskVO t2 = new TaskVO(); t2.setId("task-002"); t2.setTime("10:00"); t2.setAssignee("狼牙02"); t2.setTask("抖音直播数据检查"); t2.setPriority(TaskPriority.HIGH); t2.setStatus(TaskStatus.COMPLETED); taskCache.add(t2);
-        TaskVO t3 = new TaskVO(); t3.setId("task-003"); t3.setTime("14:00"); t3.setAssignee("狼头"); t3.setTask("仪表盘部署上线"); t3.setPriority(TaskPriority.HIGH); t3.setStatus(TaskStatus.IN_PROGRESS); taskCache.add(t3);
-        TaskVO t4 = new TaskVO(); t4.setId("task-004"); t4.setTime("09:00"); t4.setAssignee("狼牙01"); t4.setTask("生成AI热点日报"); t4.setPriority(TaskPriority.HIGH); t4.setStatus(TaskStatus.PENDING); taskCache.add(t4);
-        TaskVO t5 = new TaskVO(); t5.setId("task-005"); t5.setTime("10:00"); t5.setAssignee("狼牙02"); t5.setTask("分析昨日直播数据（含行为洞察）"); t5.setPriority(TaskPriority.HIGH); t5.setStatus(TaskStatus.PENDING); taskCache.add(t5);
-        TaskVO t6 = new TaskVO(); t6.setId("task-006"); t6.setTime("11:00"); t6.setAssignee("狼牙03"); t6.setTask("生成数据看板（含视觉重点）"); t6.setPriority(TaskPriority.MEDIUM); t6.setStatus(TaskStatus.PENDING); taskCache.add(t6);
-        // 系统级定时任务
-        TaskVO t7 = new TaskVO(); t7.setId("cron-memory-digest"); t7.setTime("每4小时"); t7.setAssignee("狼头"); t7.setTask("记忆归档检查 - 自动总结入库"); t7.setPriority(TaskPriority.HIGH); t7.setStatus(TaskStatus.IN_PROGRESS); taskCache.add(t7);
-    }
+    private final AgentRepository agentRepository;
+    private final TaskRepository taskRepository;
+    private final ExecutionLogRepository logRepository;
+    private final SystemMetricsCollector metricsCollector;
 
     public DashboardDTO getDashboardData() {
         DashboardDTO dto = new DashboardDTO();
         dto.setAgentStats(getAgentStats());
         dto.setTaskStats(getTaskStats());
         dto.setSystemStatus(getSystemStatus());
-        dto.setUpdateTime(LocalDateTime.now().toString());
+        dto.setUpdateTime(java.time.LocalDateTime.now().toString());
         return dto;
     }
 
     public List<AgentVO> getAgentList() {
-        List<AgentVO> agents = new ArrayList<>();
-        boolean leaderBusy = taskCache.stream().filter(t -> t.getAssignee().equals("狼头")).anyMatch(t -> t.getStatus() == TaskStatus.IN_PROGRESS);
-        AgentVO leader = new AgentVO(); leader.setId("wolf-head"); leader.setName("狼头"); leader.setEmoji("🔥"); leader.setRole("团队负责人"); leader.setIsLeader(true); leader.setStatus(leaderBusy ? AgentStatus.BUSY : AgentStatus.ONLINE); leader.setStatusText(leaderBusy ? "在线 - 统筹管理中" : "在线 - 正常运行"); agents.add(leader);
-        AgentVO a1 = new AgentVO(); a1.setId("wolf-tooth-01"); a1.setName("狼牙01"); a1.setEmoji("📝"); a1.setRole("文案编辑"); a1.setIsLeader(false); a1.setStatus(AgentStatus.ONLINE); a1.setStatusText("待命 - 等待明日任务"); agents.add(a1);
-        AgentVO a2 = new AgentVO(); a2.setId("wolf-tooth-02"); a2.setName("狼牙02"); a2.setEmoji("📊"); a2.setRole("数据分析"); a2.setIsLeader(false); a2.setStatus(AgentStatus.ONLINE); a2.setStatusText("待命 - 等待明日任务"); agents.add(a2);
-        AgentVO a3 = new AgentVO(); a3.setId("wolf-tooth-03"); a3.setName("狼牙03"); a3.setEmoji("📈"); a3.setRole("可视化"); a3.setIsLeader(false); a3.setStatus(AgentStatus.ONLINE); a3.setStatusText("待命 - 等待明日任务"); agents.add(a3);
-        return agents;
+        return agentRepository.findAll().stream()
+            .map(this::convertToAgentVO)
+            .collect(Collectors.toList());
     }
 
-    public List<TaskVO> getTaskList() { return new ArrayList<>(taskCache); }
-    
-    // 别名方法供其他Controller使用
-    public List<AgentVO> getAllAgents() { return getAgentList(); }
-    public List<TaskVO> getAllTasks() { return getTaskList(); }
-    
+    public List<TaskVO> getTaskList() {
+        return taskRepository.findAll();
+    }
+
+    public List<TaskVO> getAllTasks() {
+        return getTaskList();
+    }
+
+    public List<AgentVO> getAllAgents() {
+        return getAgentList();
+    }
+
     public List<Map<String, Object>> getExecutionLogs() {
-        List<Map<String, Object>> logs = new ArrayList<>();
-        Map<String, Object> log1 = new HashMap<>(); log1.put("time", "15:07"); log1.put("agent", "狼头"); log1.put("action", "创建狼牙03"); log1.put("status", "success"); logs.add(log1);
-        Map<String, Object> log2 = new HashMap<>(); log2.put("time", "14:30"); log2.put("agent", "狼头"); log2.put("action", "仪表盘前端部署"); log2.put("status", "success"); logs.add(log2);
-        Map<String, Object> log3 = new HashMap<>(); log3.put("time", "10:15"); log3.put("agent", "狼牙02"); log3.put("action", "抖音直播数据检查完成"); log3.put("status", "success"); logs.add(log3);
-        Map<String, Object> log4 = new HashMap<>(); log4.put("time", "09:30"); log4.put("agent", "狼牙01"); log4.put("action", "AI热点日报生成完成"); log4.put("status", "success"); logs.add(log4);
-        return logs;
+        return logRepository.findRecent(50).stream()
+            .map(log -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("time", log.getTime());
+                map.put("agent", log.getAgent());
+                map.put("action", log.getAction());
+                map.put("status", log.getStatus());
+                return map;
+            })
+            .collect(Collectors.toList());
     }
 
     public Map<String, Object> getHealthStatus() {
         Map<String, Object> health = new HashMap<>();
-        health.put("status", "ok"); health.put("timestamp", LocalDateTime.now().toString()); health.put("version", "1.0.0"); health.put("uptime", calculateUptime());
+        health.put("status", "ok");
+        health.put("timestamp", java.time.LocalDateTime.now().toString());
+        health.put("version", "1.0.0");
+        health.put("uptime", metricsCollector.getUptime());
         return health;
     }
 
+    // 更新代理状态（供OpenClaw回调使用）
+    public void updateAgentStatus(String agentId, AgentStatus status, String statusText) {
+        agentRepository.updateStatus(agentId, status, statusText);
+        log.info("Updated agent {} status to {}: {}", agentId, status, statusText);
+    }
+
+    // 更新任务状态（供OpenClaw回调使用）
+    public void updateTaskStatus(String taskId, TaskStatus status) {
+        taskRepository.updateStatus(taskId, status);
+        log.info("Updated task {} status to {}", taskId, status);
+    }
+
+    // 添加执行日志（供OpenClaw回调使用）
+    public void addExecutionLog(String agentId, String action, String status, String details) {
+        logRepository.addLog(agentId, action, status, details);
+    }
+
+    private AgentVO convertToAgentVO(Agent agent) {
+        AgentVO vo = new AgentVO();
+        vo.setId(agent.getId());
+        vo.setName(agent.getName());
+        vo.setEmoji(agent.getEmoji());
+        vo.setRole(agent.getRole());
+        vo.setIsLeader(agent.getIsLeader());
+        vo.setStatus(agent.getStatus());
+        vo.setStatusText(agent.getStatusText());
+        
+        // 获取代理的任务列表
+        List<TaskVO> tasks = taskRepository.findByAssignee(agent.getName());
+        if (tasks != null && !tasks.isEmpty()) {
+            vo.setTasks(tasks.stream()
+                .map(t -> {
+                    AgentVO.TaskItem item = new AgentVO.TaskItem();
+                    item.setText(t.getTask());
+                    item.setStatus(t.getStatus().name().toLowerCase());
+                    return item;
+                })
+                .collect(Collectors.toList()));
+        }
+        
+        return vo;
+    }
+
     private DashboardDTO.AgentStats getAgentStats() {
-        List<AgentVO> agents = getAgentList();
+        List<Agent> agents = agentRepository.findAll();
         long online = agents.stream().filter(a -> a.getStatus() == AgentStatus.ONLINE).count();
         long busy = agents.stream().filter(a -> a.getStatus() == AgentStatus.BUSY).count();
         DashboardDTO.AgentStats stats = new DashboardDTO.AgentStats();
-        stats.setTotal(agents.size()); stats.setOnline((int) online); stats.setBusy((int) busy); stats.setOffline(0);
+        stats.setTotal(agents.size());
+        stats.setOnline((int) online);
+        stats.setBusy((int) busy);
+        stats.setOffline(0);
         return stats;
     }
 
     private DashboardDTO.TaskStats getTaskStats() {
-        long completed = taskCache.stream().filter(t -> t.getStatus() == TaskStatus.COMPLETED).count();
-        long pending = taskCache.stream().filter(t -> t.getStatus() == TaskStatus.PENDING).count();
-        long inProgress = taskCache.stream().filter(t -> t.getStatus() == TaskStatus.IN_PROGRESS).count();
+        List<TaskVO> tasks = taskRepository.findAll();
+        long completed = tasks.stream().filter(t -> t.getStatus() == TaskStatus.COMPLETED).count();
+        long pending = tasks.stream().filter(t -> t.getStatus() == TaskStatus.PENDING).count();
+        long inProgress = tasks.stream().filter(t -> t.getStatus() == TaskStatus.IN_PROGRESS).count();
         DashboardDTO.TaskStats stats = new DashboardDTO.TaskStats();
-        stats.setTotal(taskCache.size()); stats.setPending((int) pending); stats.setInProgress((int) inProgress); stats.setCompleted((int) completed); stats.setFailed(0);
+        stats.setTotal(tasks.size());
+        stats.setPending((int) pending);
+        stats.setInProgress((int) inProgress);
+        stats.setCompleted((int) completed);
+        stats.setFailed(0);
         return stats;
     }
 
     private DashboardDTO.SystemStatus getSystemStatus() {
+        Map<String, Object> metrics = metricsCollector.getFullSystemStatus();
         DashboardDTO.SystemStatus status = new DashboardDTO.SystemStatus();
-        status.setStatus("running"); status.setUptime(calculateUptime()); status.setCpuUsage(35.2); status.setMemoryUsage(42.8);
+        status.setStatus("running");
+        status.setUptime((String) metrics.get("uptime"));
+        status.setCpuUsage(Double.parseDouble((String) metrics.get("cpuUsage")));
+        status.setMemoryUsage(Double.parseDouble((String) metrics.get("memoryUsage")));
         return status;
-    }
-    
-    private String calculateUptime() {
-        Duration duration = Duration.between(SYSTEM_START_TIME, LocalDateTime.now());
-        long hours = duration.toHours(); long minutes = duration.toMinutes() % 60;
-        return hours + "h " + minutes + "m";
     }
 }
