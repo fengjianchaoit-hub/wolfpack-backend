@@ -307,6 +307,43 @@ GIT_SSH_COMMAND="ssh -i ~/.ssh/github_wolfpack -o StrictHostKeyChecking=no" Git 
 
 **违规后果：** 视为低效工作方式，可能导致时间浪费和反复部署失败。
 
+### 7.4 时间处理规范（强制标准）
+> **所有涉及时间的操作必须统一使用北京时间（Asia/Shanghai），禁止混用时区。**
+
+**核心原则：**
+- ✅ 数据库存储：使用 `LocalDateTime`（JPA 自动处理，无时区）
+- ✅ 业务逻辑时间：使用 `BeijingTimeUtil.now()` 获取当前北京时间
+- ✅ 展示给前端：使用 `BeijingTimeUtil.toDisplayString()` 转为北京时间字符串
+- ✅ "今天"计算：使用 `BeijingTimeUtil.todayStart()` / `todayEnd()`
+- ❌ **禁止使用 `LocalDateTime.now()` 直接用于业务逻辑或展示**
+- ❌ **禁止使用时区转换方法 `.atZone(ZoneId.systemDefault())`**
+
+**工具类使用示例：**
+```java
+// ✅ 正确：获取当前北京时间
+LocalDateTime now = BeijingTimeUtil.now();
+
+// ✅ 正确：转为北京时间显示字符串（MM-dd HH:mm）
+String displayTime = BeijingTimeUtil.toDisplayString(task.getCreatedAt());
+
+// ✅ 正确：获取今天开始时间（北京时间 00:00:00）
+LocalDateTime todayStart = BeijingTimeUtil.todayStart();
+
+// ✅ 正确：判断是否是今天
+boolean isToday = BeijingTimeUtil.isToday(task.getCompletedAt());
+
+// ❌ 错误：直接使用系统时间（可能不是北京时间）
+LocalDateTime wrong = LocalDateTime.now();
+
+// ❌ 错误：手动时区转换（容易出错）
+ZonedDateTime wrong2 = localDateTime.atZone(ZoneId.systemDefault())
+    .withZoneSameInstant(ZoneId.of("Asia/Shanghai"));
+```
+
+**工具类位置：** `com.wolfpack.admin.util.BeijingTimeUtil`
+
+**违规后果：** 时间显示错误（如 UTC 时间显示为 "03-06" 而非北京时间 "03-07"），导致数据时间线混乱。
+
 ---
 
 ## 八、持续改进方向

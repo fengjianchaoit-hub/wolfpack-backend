@@ -6,6 +6,7 @@ import com.wolfpack.admin.entity.Task;
 import com.wolfpack.admin.repository.AgentJpaRepository;
 import com.wolfpack.admin.repository.ExecutionLogJpaRepository;
 import com.wolfpack.admin.repository.TaskJpaRepository;
+import com.wolfpack.admin.util.BeijingTimeUtil;
 import com.wolfpack.admin.util.SystemMetricsCollector;
 import com.wolfpack.api.dto.DashboardDTO;
 import com.wolfpack.api.enums.AgentStatus;
@@ -45,7 +46,7 @@ public class DashboardService {
         dto.setAgentStats(getAgentStats());
         dto.setTaskStats(getTaskStats());
         dto.setSystemStatus(getSystemStatus());
-        dto.setUpdateTime(LocalDateTime.now().toString());
+        dto.setUpdateTime(BeijingTimeUtil.nowIsoString()); // 使用北京时间
         return dto;
     }
 
@@ -79,7 +80,7 @@ public class DashboardService {
     public Map<String, Object> getHealthStatus() {
         Map<String, Object> health = new HashMap<>();
         health.put("status", "ok");
-        health.put("timestamp", LocalDateTime.now().toString());
+        health.put("timestamp", BeijingTimeUtil.nowIsoString());
         health.put("version", "1.0.0");
         health.put("uptime", metricsCollector.getUptime());
         return health;
@@ -95,7 +96,7 @@ public class DashboardService {
         AgentStatus oldStatus = agent.getStatus();
         agent.setStatus(status);
         agent.setStatusText(statusText);
-        agent.setLastActiveTime(LocalDateTime.now());
+        agent.setLastActiveTime(BeijingTimeUtil.now());
         agentRepository.save(agent);
         
         // 自动记录状态变更日志
@@ -118,8 +119,8 @@ public class DashboardService {
         task.setScheduledTime(scheduledTime);
         task.setDescription(description);
         task.setIsCronJob(false);
-        task.setCreatedAt(LocalDateTime.now()); // 手动设置创建时间
-        task.setUpdatedAt(LocalDateTime.now());
+        task.setCreatedAt(BeijingTimeUtil.now()); // 使用北京时间
+        task.setUpdatedAt(BeijingTimeUtil.now());
         taskRepository.save(task);
         
         // 自动记录任务创建日志
@@ -140,7 +141,7 @@ public class DashboardService {
         TaskStatus oldStatus = task.getStatus();
         task.setStatus(status);
         if (status == TaskStatus.COMPLETED) {
-            task.setCompletedAt(LocalDateTime.now());
+            task.setCompletedAt(BeijingTimeUtil.now());
         }
         taskRepository.save(task);
         
@@ -213,15 +214,8 @@ public class DashboardService {
 
     private Map<String, Object> convertLogToMap(ExecutionLog log) {
         Map<String, Object> map = new HashMap<>();
-        String timeStr = "--:--";
-        if (log.getCreatedAt() != null) {
-            // LocalDateTime 转为北京时间显示
-            java.time.ZonedDateTime zdt = log.getCreatedAt()
-                .atZone(java.time.ZoneId.systemDefault())
-                .withZoneSameInstant(java.time.ZoneId.of("Asia/Shanghai"));
-            timeStr = zdt.format(TIME_FORMATTER);
-        }
-        map.put("time", timeStr);
+        // 使用工具类转为北京时间显示
+        map.put("time", BeijingTimeUtil.toDisplayString(log.getCreatedAt()));
         map.put("agent", log.getAgentName());
         map.put("action", log.getAction());
         map.put("status", log.getStatus());
@@ -245,8 +239,8 @@ public class DashboardService {
     private DashboardDTO.TaskStats getTaskStats() {
         List<Task> tasks = taskRepository.findAll();
         
-        // 今日完成的任务（根据 completedAt 判断）
-        LocalDateTime todayStart = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
+        // 今日完成的任务（根据 completedAt 判断，使用北京时间）
+        LocalDateTime todayStart = BeijingTimeUtil.todayStart();
         long completedToday = tasks.stream()
             .filter(t -> t.getStatus() == TaskStatus.COMPLETED)
             .filter(t -> t.getCompletedAt() != null && t.getCompletedAt().isAfter(todayStart))
