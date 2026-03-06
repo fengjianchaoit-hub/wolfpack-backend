@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true  # <-- 添加这行
     
     - name: Setup SSH
       run: |
@@ -20,6 +22,9 @@ jobs:
     
     - name: Copy Frontend Files (scp)
       run: |
+        # 检查文件是否存在
+        ls -la wolfpack_dashboard/
+        
         scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
           wolfpack_dashboard/index.html \
           ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/opt/wolfpack-dashboard/html/
