@@ -1,6 +1,21 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: wolfpack-postgres
+    environment:
+      POSTGRES_DB: wolfpack
+      POSTGRES_USER: wolfpack
+      POSTGRES_PASSWORD: wolfpack123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - wolfpack-network
+
   wolfpack-backend:
     build: .
     container_name: wolfpack-backend
@@ -9,6 +24,12 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - SERVER_PORT=8080
+      - DB_PASSWORD=wolfpack123
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/wolfpack
+      - SPRING_DATASOURCE_USERNAME=wolfpack
+      - SPRING_DATASOURCE_PASSWORD=wolfpack123
+    depends_on:
+      - postgres
     restart: unless-stopped
     networks:
       - wolfpack-network
@@ -30,6 +51,9 @@ services:
     restart: unless-stopped
     networks:
       - wolfpack-network
+
+volumes:
+  postgres_data:
 
 networks:
   wolfpack-network:

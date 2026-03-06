@@ -7,12 +7,12 @@ spring:
   application:
     name: wolfpack-admin
   
-  # PostgreSQL数据库配置
+  # PostgreSQL数据库配置（支持环境变量覆盖）
   datasource:
-    url: jdbc:postgresql://localhost:5432/wolfpack
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/wolfpack}
     driver-class-name: org.postgresql.Driver
-    username: wolfpack
-    password: ${DB_PASSWORD:wolfpack123}
+    username: ${SPRING_DATASOURCE_USERNAME:wolfpack}
+    password: ${SPRING_DATASOURCE_PASSWORD:wolfpack123}
   
   jpa:
     hibernate:
