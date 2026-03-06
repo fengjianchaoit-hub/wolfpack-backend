@@ -236,14 +236,34 @@ public class DashboardService {
 
     private DashboardDTO.TaskStats getTaskStats() {
         List<Task> tasks = taskRepository.findAll();
-        long completed = tasks.stream().filter(t -> t.getStatus() == TaskStatus.COMPLETED).count();
-        long pending = tasks.stream().filter(t -> t.getStatus() == TaskStatus.PENDING).count();
-        long inProgress = tasks.stream().filter(t -> t.getStatus() == TaskStatus.IN_PROGRESS).count();
+        
+        // 今日完成的任务（根据 completedAt 判断）
+        LocalDateTime todayStart = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
+        long completedToday = tasks.stream()
+            .filter(t -> t.getStatus() == TaskStatus.COMPLETED)
+            .filter(t -> t.getCompletedAt() != null && t.getCompletedAt().isAfter(todayStart))
+            .count();
+        
+        // 待处理任务
+        long pending = tasks.stream()
+            .filter(t -> t.getStatus() == TaskStatus.PENDING)
+            .count();
+        
+        // 执行中任务
+        long inProgress = tasks.stream()
+            .filter(t -> t.getStatus() == TaskStatus.IN_PROGRESS)
+            .count();
+        
+        // 总任务数
+        long totalCompleted = tasks.stream()
+            .filter(t -> t.getStatus() == TaskStatus.COMPLETED)
+            .count();
+        
         DashboardDTO.TaskStats stats = new DashboardDTO.TaskStats();
         stats.setTotal(tasks.size());
         stats.setPending((int) pending);
         stats.setInProgress((int) inProgress);
-        stats.setCompleted((int) completed);
+        stats.setCompleted((int) completedToday); // 今日完成数
         stats.setFailed(0);
         return stats;
     }
