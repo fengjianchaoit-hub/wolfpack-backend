@@ -12,6 +12,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wolfpack -d wolfpack"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
     networks:
       - wolfpack-network
@@ -23,13 +28,12 @@ services:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - SERVER_PORT=8080
-      - DB_PASSWORD=wolfpack123
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/wolfpack
       - SPRING_DATASOURCE_USERNAME=wolfpack
       - SPRING_DATASOURCE_PASSWORD=wolfpack123
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - wolfpack-network
