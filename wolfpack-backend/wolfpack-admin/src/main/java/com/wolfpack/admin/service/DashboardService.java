@@ -38,7 +38,8 @@ public class DashboardService {
     private final ExecutionLogJpaRepository logRepository;
     private final SystemMetricsCollector metricsCollector;
 
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(java.time.ZoneId.of("Asia/Shanghai"));
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("MM-dd HH:mm")
+        .withZone(java.time.ZoneId.of("Asia/Shanghai"));
 
     public DashboardDTO getDashboardData() {
         DashboardDTO dto = new DashboardDTO();
@@ -213,7 +214,15 @@ public class DashboardService {
 
     private Map<String, Object> convertLogToMap(ExecutionLog log) {
         Map<String, Object> map = new HashMap<>();
-        map.put("time", log.getCreatedAt() != null ? log.getCreatedAt().format(TIME_FORMATTER) : "--:--");
+        String timeStr = "--:--";
+        if (log.getCreatedAt() != null) {
+            // LocalDateTime 转为北京时间显示
+            java.time.ZonedDateTime zdt = log.getCreatedAt()
+                .atZone(java.time.ZoneId.systemDefault())
+                .withZoneSameInstant(java.time.ZoneId.of("Asia/Shanghai"));
+            timeStr = zdt.format(TIME_FORMATTER);
+        }
+        map.put("time", timeStr);
         map.put("agent", log.getAgentName());
         map.put("action", log.getAction());
         map.put("status", log.getStatus());
