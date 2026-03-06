@@ -285,6 +285,28 @@ GIT_SSH_COMMAND="ssh -i ~/.ssh/github_wolfpack -o StrictHostKeyChecking=no" Git 
 
 **违规后果：** 视为工作流程违规，可能导致返工和资源浪费。
 
+### 7.3 技术问题排查原则（工作纪律）
+> **遇到技术错误时，优先使用联网查询获取最新、最准确的解决方案，而非依赖经验盲目试错。**
+
+**具体要求：**
+- ✅ 分析错误日志，提取关键错误信息
+- ✅ 如果无法立即定位（30秒内），立即使用 `web_search` 或 `web_fetch` 查询
+- ✅ 基于官方文档或社区最佳实践给出方案评估
+- ❌ **禁止反复试错超过3轮而不查询**
+- ❌ **禁止仅凭经验猜测而不验证**
+
+**执行流程：**
+```
+遇到错误 → 分析日志（30秒）→ 无法定位 → 联网查询（1分钟）→ 基于搜索结果评估 → 执行修复
+```
+
+**查询关键词示例：**
+- `"Docker Alpine ENTRYPOINT no such file or directory"`
+- `"Spring Boot PostgreSQL Docker connection refused"`
+- `"docker-compose vs docker compose server deployment"`
+
+**违规后果：** 视为低效工作方式，可能导致时间浪费和反复部署失败。
+
 ---
 
 ## 八、持续改进方向
