@@ -5,7 +5,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
@@ -25,61 +25,43 @@ jobs:
     - name: Build Docker Image
       working-directory: ./wolfpack-backend
       run: |
-        docker build -t wolfpack-backend:${{ github.sha }} .
-        docker tag wolfpack-backend:${{ github.sha }} wolfpack-backend:latest
+        docker build -t wolfpack-backend:latest .
+        docker save wolfpack-backend:latest | gzip > wolfpack-backend.tar.gz
     
-    - name: Save Docker Image
-      working-directory: ./wolfpack-backend
-      run: docker save wolfpack-backend:latest | gzip > wolfpack-backend.tar.gz
-    
-    - name: Prepare Deploy Package
-      run: |
-        mkdir -p deploy
-        cp wolfpack-backend/wolfpack-backend.tar.gz deploy/
-        cp wolfpack-backend/docker-compose.yml deploy/
-        ls -la deploy/
-    
-    - name: Upload Deploy Package
-      uses: actions/upload-artifact@v4
-      with:
-        name: deploy-package
-        path: deploy/*
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-    - name: Download Package
-      uses: actions/download-artifact@v4
-      with:
-        name: deploy-package
-        path: ./deploy
-    
-    - name: List files
-      run: ls -la ./deploy
-    
-    - name: Deploy to Server
+    - name: Upload Docker Image to Server
       uses: appleboy/scp-action@master
       with:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         password: ${{ secrets.SERVER_PASSWORD }}
-        source: "deploy/*"
-        target: "/opt/wolfpack-java"
+        port: ${{ secrets.SERVER_PORT }}
+        source: "wolfpack-backend/wolfpack-backend.tar.gz"
+        target: "/opt/wolfpack-java/"
+        strip_components: 1
     
-    - name: Restart Services
+    - name: Upload Docker Compose to Server
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        source: "wolfpack-backend/docker-compose.yml"
+        target: "/opt/wolfpack-java/"
+        strip_components: 1
+    
+    - name: Start Services
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
         script: |
-          cd /opt/wolfpack-java/deploy
-          mv wolfpack-backend.tar.gz docker-compose.yml ../
-          cd ..
+          cd /opt/wolfpack-java
           docker load < wolfpack-backend.tar.gz
           docker-compose down || true
           docker-compose up -d
-          rm -rf deploy wolfpack-backend.tar.gz
+          sleep 5
+          docker ps | grep wolfpack
+          curl -s http://localhost:8080/api/v1/dashboard/health || echo "Health check failed"
