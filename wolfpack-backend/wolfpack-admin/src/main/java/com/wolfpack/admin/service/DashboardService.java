@@ -164,6 +164,7 @@ public class DashboardService {
         executionLog.setAction(action);
         executionLog.setStatus(status);
         executionLog.setDetails(details);
+        executionLog.setCreatedAt(BeijingTimeUtil.now()); // 设置创建时间
         logRepository.save(executionLog);
         
         log.info("Added execution log: {} - {}", agentId, action);
