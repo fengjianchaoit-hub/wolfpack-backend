@@ -65,6 +65,11 @@ const menuItems = [
     label: '任务调度',
   },
   {
+    key: '/alerts',
+    icon: <BellOutlined />,
+    label: '告警中心',
+  },
+  {
     key: '/settings',
     icon: <SettingOutlined />,
     label: '系统设置',

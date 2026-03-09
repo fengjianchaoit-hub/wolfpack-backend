@@ -6,6 +6,9 @@ import LiveTaskControl from '@/pages/LiveData/Tasks';
 import DataQuery from '@/pages/LiveData/DataQuery';
 import Detect from '@/pages/LiveData/Detect';
 import Files from '@/pages/Files';
+import System from '@/pages/System';
+import Alerts from '@/pages/Alerts';
+import Settings from '@/pages/Settings';
 
 const router = createBrowserRouter([
   {
@@ -22,10 +25,11 @@ const router = createBrowserRouter([
       { path: 'files', element: <Files /> },
       { path: 'files/config', element: <div style={{ color: '#fff' }}>配置文件（开发中）</div> },
       { path: 'files/logs', element: <div style={{ color: '#fff' }}>操作日志（开发中）</div> },
-      { path: 'system', element: <div style={{ color: '#fff' }}>服务器监控（开发中）</div> },
-      { path: 'system/containers', element: <div style={{ color: '#fff' }}>容器管理（开发中）</div> },
+      { path: 'system', element: <System /> },
+      { path: 'system/containers', element: <System /> },
       { path: 'schedule', element: <div style={{ color: '#fff' }}>任务调度（开发中）</div> },
-      { path: 'settings', element: <div style={{ color: '#fff' }}>系统设置（开发中）</div> },
+      { path: 'alerts', element: <Alerts /> },
+      { path: 'settings', element: <Settings /> },
     ],
   },
 ]);

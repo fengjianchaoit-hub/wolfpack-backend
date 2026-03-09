@@ -1,0 +1,15 @@
+.container {
+  padding: 0;
+}
+
+.chartCard {
+  :global(.ant-card-head) {
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    color: #f0f6fc;
+  }
+  
+  :global(.ant-card-body) {
+    background: #161b22;
+  }
+}
