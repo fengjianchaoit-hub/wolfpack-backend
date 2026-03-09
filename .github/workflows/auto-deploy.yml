@@ -54,9 +54,9 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
-        source: "wolfpack-dashboard/index.html"
+        source: "wolfpack-dashboard/dist/*"
         target: "/opt/wolfpack-dashboard/html/"
-        strip_components: 1
+        strip_components: 2
     
     # 7. 部署到服务器（Docker 纯命令部署）
     - name: Deploy to Server
