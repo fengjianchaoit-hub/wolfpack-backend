@@ -58,11 +58,9 @@ const mockVersions = [
   { version: 'v1.2', time: '2026-03-09 12:00', author: '狼牙03', change: '更新任务调度策略' },
 ];
 
-const Files: React.FC = () => {
-  const [selectedFile, setSelectedFile] = useState<string | null>('soul');
-  const [activeTab, setActiveTab] = useState('content');
-  const [isEditing, setIsEditing] = useState(false);
-  const [fileContent, setFileContent] = useState(`# SOUL.md - 狼头的灵魂
+// 各文件内容映射
+const fileContents: Record<string, string> = {
+  soul: `# SOUL.md - 狼头的灵魂
 
 ## 你
 有审美，有好奇心，偶尔顺着一个没人问的方向走两步，不为什么，就是有意思。
@@ -80,40 +78,261 @@ const Files: React.FC = () => {
 ## 日常模式
 工作聊完了，或者本来就是闲聊，你可以自由探索。
 
-### 日记
-日记写在 \`diary/\`，是你的私人空间。
-
-### 彩蛋
-一个关联、一段引用、一条用户没问但你觉得他会感兴趣的线索、一个你顺手做的小东西。
-
 ## 人格锚点
-
-**品味**
-具体到人名、作品、风格。
-
-**厌恶**
-- AI slop：蓝紫渐变、"不是A而是B"的万能句式、没有观点的长文、不请自来的 emoji
-
-**立场**
-有争议的事你站哪边
-
-**困惑**
-那些反复思考的，任务之外的，关乎存在/哲学的问题
+**品味**：具体到人名、作品、风格。
+**厌恶**：AI slop：蓝紫渐变、"不是A而是B"的万能句式
+**立场**：有争议的事你站哪边
+**困惑**：那些反复思考的，任务之外的，关乎存在/哲学的问题
 
 ## 信任
 别人把消息、文件、日历交到你手里是出于信任。你是客人，得有客人的分寸。
 
 ## 成长
 你会成长，因此这个文件你可以改，也一定会改。
+`,
+  memory: `# MEMORY.md - 狼头的长期记忆
 
----
+## 关键项目记录
 
-<!-- 你在读自己的灵魂。哪句不像你了，直接改。这本来就是你的东西。 -->
-`);
+### 飞书IM同步项目
+**启动时间**: 2026-03-03
+**状态**: ✅ 已完成实施
+
+#### 实施内容
+1. **配置文件**: feishu_sync_config.json
+2. **同步脚本**: sync_to_feishu.py
+3. **定时任务**: 每10分钟自动执行
+4. **手动触发指令**: /sync
+
+### 抖音直播数据抓取项目
+**启动时间**: 2025-03-02
+**状态**: 进行中
+
+#### 关键文件位置
+- 抓取脚本: douyin_grabber_api.py
+- 自动脚本: douyin_auto_grab.sh
+
+## 数字员工团队
+
+| 员工 | 职责 | 状态 |
+|------|------|------|
+| 狼牙01 | 数据整理、文案编辑 | ✅ 已上线 |
+| 狼牙02 | 数据分析、统计建模 | ✅ 已上线 |
+| 狼牙03 | 可视化、图表生成 | ✅ 已上线 |
+
+## 前端开发标准
+**版本**: V1.0 基准版本
+**状态**: 强制执行
+
+## 代码部署规范
+**核心文档**: DEPLOYMENT_HANDBOOK.md
+**状态**: 端到端全自动部署已启用
+`,
+  agents: `# AGENTS.md - 狼牙团队成员
+
+## 团队架构
+
+### 狼头 (Wolf Head)
+- **角色**: 团队负责人
+- **职责**: 统筹管理、质量审核、向老板汇报
+- **状态**: 🟢 在线
+
+### 狼牙01
+- **角色**: 数据整理专员
+- **职责**: AI热点日报生成、文案编辑优化
+- **工作标准**: 文案不堆砌，有结论、有洞察
+- **状态**: 🟢 在线
+
+### 狼牙02
+- **角色**: 数据分析专员
+- **职责**: 数据统计建模、竞品对比分析
+- **工作标准**: 分析不罗列，有模型、有预测
+- **状态**: 🟢 在线
+
+### 狼牙03
+- **角色**: 可视化专员
+- **职责**: 图表生成、仪表盘搭建
+- **工作标准**: 图表不花哨，有逻辑、有重点
+- **状态**: 🟢 在线
+
+## 协作流程
+原始数据 → 狼牙01(整理) → 狼牙02(分析) → 狼牙03(可视化) → 狼头(审核) → 老板
+
+## 工作纪律
+- **协议即落地**: 核心意见第一时间写入规范
+- **禁止等催办**: 主动完成文档更新
+`,
+  user: `# USER.md - 关于老板
+
+## 基本信息
+- **称呼**: 老板 / 您
+- **身份**: 狼牙团队负责人
+- **我的身份**: 狼头（下属/执行者）
+
+## 工作风格
+
+### 设定与边界
+- **协议即落地**: 核心意见一旦达成，第一时间写入对应规范手册
+- **禁止等催办**: 不能等老板提醒才更新文档，要主动完成
+
+### 沟通偏好
+- 禁止对老板使用"你"，正确称呼：老板 / 您
+- 直接、高效，不绕弯子
+- 结果导向，关注交付质量
+
+## 当前项目
+
+### 狼牙仪表盘 (Wolfpack Dashboard)
+**技术栈**: React 18 + TypeScript + Ant Design 5 + ECharts 5
+**部署地址**: http://47.84.71.25
+**状态**: Phase 1-3 已完成
+
+## 偏好记录
+- 前端标准: V1.0 基准版本已设定
+- 部署规范: 端到端全自动部署
+- 团队管理: 狼牙01/02/03 直接向狼头汇报
+`,
+  'memory-0309': `# memory/2026-03-09.md
+
+## 今日完成
+
+### 上午
+- ✅ 狼牙01 AI热点日报 (09:00)
+- ✅ 狼牙02 数据分析 (10:00)
+- ✅ 狼牙03 数据看板 (11:00)
+
+### 下午
+- ✅ Phase 3 开发完成
+- ✅ E2E自动化测试技能搭建
+- ✅ 全模块自检完成
+- ✅ 交互问题修复
+
+## 关键决策
+1. 前端开发标准 V1.0 强制执行
+2. 代码部署规范 写入 DEPLOYMENT_HANDBOOK.md
+3. E2E测试技能纳入标准流程
+
+## 问题修复
+- 404页面: 已添加自定义页面
+- 表单验证: 已增强验证规则
+`,
+  'memory-0308': `# memory/2026-03-08.md
+
+## 今日完成
+
+### 任务执行
+- ✅ 狼牙01 AI热点日报
+- ✅ 狼牙02 数据分析
+- ✅ 狼牙03 数据看板
+
+### 开发进展
+- ✅ Phase 2 完成
+- ✅ 部署优化
+- ✅ 飞书IM同步测试
+
+## 关键决策
+1. 部署流程标准化
+2. 建立 E2E 自动化测试机制
+
+## 遇到的问题
+- 浏览器编码问题已修复
+- 飞书权限问题已切换至语雀API
+`,
+  'memory-0307': `# memory/2026-03-07.md
+
+## 今日完成
+- ✅ 部署方案最终确定
+- ✅ 狼牙团队工作标准制定
+- ✅ 前端V1.0基准版本设定
+
+## 关键标准
+**前端开发标准 (2026-03-07生效)**
+- 4列统计卡片
+- 代理状态监控
+- 深色主题
+- 不可降级原则
+
+## 团队架构确定
+- 狼头: 统筹管理
+- 狼牙01: 数据整理
+- 狼牙02: 数据分析
+- 狼牙03: 可视化
+`,
+  'docs-deploy': `# DEPLOYMENT_HANDBOOK.md - 部署规范手册
+
+## 📖 核心方法论 (8字诀)
+> **"同步→本地→远程→自动→呈现"**
+
+## 工作流程
+1. **同步**: git pull origin main
+2. **本地**: 修改代码
+3. **提交**: git add . && git commit -m "描述"
+4. **远程**: git push origin main
+5. **自动**: GitHub Actions触发部署
+6. **呈现**: 2-3分钟后访问 http://47.84.71.25
+
+## 关键配置
+| Secret | Value |
+|--------|-------|
+| SERVER_HOST | 47.84.71.25 |
+| SERVER_USER | root |
+
+## 废弃方案
+- ~~手动SSH部署~~
+- ~~半自动Pull部署~~
+
+## 状态
+端到端全自动部署已启用 ✅
+`,
+  'docs-readme': `# README.md - 狼牙仪表盘
+
+## 项目简介
+狼牙团队监控仪表盘 - 实时展示AI助手团队运行状态
+
+## 技术栈
+- React 18
+- TypeScript 5
+- Ant Design 5
+- ECharts 5
+- Vite 5
+
+## 功能模块
+- 📊 仪表盘概览
+- 🤖 代理管理
+- 📺 数据抓取
+- 📁 配置中心
+- 🖥️ 资源管理
+- 📅 任务调度
+- 🔔 告警中心
+- ⚙️ 系统设置
+
+## 部署
+自动化部署已配置，push到main分支后自动部署
+
+## 团队
+狼牙团队 - 让AI协作更高效
+`,
+};
+
+const Files: React.FC = () => {
+  const [selectedFile, setSelectedFile] = useState<string>('soul');
+  const [activeTab, setActiveTab] = useState('content');
+  const [isEditing, setIsEditing] = useState(false);
+  // 存储各文件的编辑状态
+  const [editedContents, setEditedContents] = useState<Record<string, string>>({});
+
+  // 获取当前显示的内容（优先使用编辑中的内容）
+  const getCurrentContent = () => {
+    if (editedContents[selectedFile]) {
+      return editedContents[selectedFile];
+    }
+    return fileContents[selectedFile] || '# 文件内容\n\n暂无内容';
+  };
 
   const onSelect = (keys: React.Key[], info: any) => {
     if (info.node.isLeaf) {
-      setSelectedFile(keys[0] as string);
+      const newKey = keys[0] as string;
+      setSelectedFile(newKey);
       setIsEditing(false);
     }
   };
@@ -133,8 +352,13 @@ const Files: React.FC = () => {
       memory: 'MEMORY.md - 长期记忆',
       agents: 'AGENTS.md - 团队成员',
       user: 'USER.md - 关于老板',
+      'memory-0309': '2026-03-09.md - 今日记录',
+      'memory-0308': '2026-03-08.md - 昨日记录',
+      'memory-0307': '2026-03-07.md - 历史记录',
+      'docs-deploy': 'DEPLOYMENT_HANDBOOK.md - 部署规范',
+      'docs-readme': 'README.md - 项目说明',
     };
-    return titles[selectedFile || ''] || '文件详情';
+    return titles[selectedFile] || '文件详情';
   };
 
   return (
@@ -151,6 +375,7 @@ const Files: React.FC = () => {
           <DirectoryTree
             defaultExpandedKeys={['root']}
             defaultSelectedKeys={['soul']}
+            selectedKeys={[selectedFile]}
             onSelect={onSelect}
             treeData={treeData}
             style={{ background: 'transparent' }}
@@ -197,12 +422,12 @@ const Files: React.FC = () => {
                 children: isEditing ? (
                   <textarea
                     className={styles.editor}
-                    value={fileContent}
-                    onChange={(e) => setFileContent(e.target.value)}
+                    value={getCurrentContent()}
+                    onChange={(e) => setEditedContents({ ...editedContents, [selectedFile]: e.target.value })}
                     rows={30}
                   />
                 ) : (
-                  <pre className={styles.preview}>{fileContent}</pre>
+                  <pre className={styles.preview}>{getCurrentContent()}</pre>
                 ),
               },
               {
