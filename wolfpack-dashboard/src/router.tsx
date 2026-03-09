@@ -9,6 +9,7 @@ import Files from '@/pages/Files';
 import System from '@/pages/System';
 import Alerts from '@/pages/Alerts';
 import Settings from '@/pages/Settings';
+import NotFound from '@/pages/NotFound';
 
 const router = createBrowserRouter([
   {
@@ -30,6 +31,7 @@ const router = createBrowserRouter([
       { path: 'schedule', element: <div style={{ color: '#fff' }}>任务调度（开发中）</div> },
       { path: 'alerts', element: <Alerts /> },
       { path: 'settings', element: <Settings /> },
+      { path: '*', element: <NotFound /> },
     ],
   },
 ]);

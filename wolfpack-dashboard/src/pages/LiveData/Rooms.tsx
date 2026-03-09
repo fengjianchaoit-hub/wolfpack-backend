@@ -153,27 +153,60 @@ const LiveRoomList: React.FC = () => {
         title="新增直播间"
         open={isModalOpen}
         onOk={() => form.submit()}
-        onCancel={() => setIsModalOpen(false)}
+        onCancel={() => {
+          form.resetFields();
+          setIsModalOpen(false);
+        }}
         okText="保存"
         cancelText="取消"
+        destroyOnClose
       >
-        <Form form={form} onFinish={handleAdd} layout="vertical">
-          <Form.Item name="platform" label="平台" rules={[{ required: true }]}>
-            <Select>
+        <Form 
+          form={form} 
+          onFinish={handleAdd} 
+          layout="vertical"
+          autoComplete="off"
+        >
+          <Form.Item 
+            name="platform" 
+            label="平台" 
+            rules={[{ required: true, message: '请选择平台' }]}
+          >
+            <Select placeholder="请选择平台">
               <Select.Option value="抖音">抖音</Select.Option>
               <Select.Option value="快手">快手</Select.Option>
               <Select.Option value="视频号">视频号</Select.Option>
               <Select.Option value="淘宝直播">淘宝直播</Select.Option>
             </Select>
           </Form.Item>
-          <Form.Item name="roomId" label="直播间ID" rules={[{ required: true }]}>
-            <Input placeholder="请输入直播间ID" />
+          <Form.Item 
+            name="roomId" 
+            label="直播间ID" 
+            rules={[
+              { required: true, message: '请输入直播间ID' },
+              { pattern: /^[0-9]+$/, message: '直播间ID只能包含数字' },
+              { min: 5, message: '直播间ID至少5位' }
+            ]}
+          >
+            <Input placeholder="请输入直播间ID" maxLength={20} />
           </Form.Item>
-          <Form.Item name="anchorName" label="主播名称" rules={[{ required: true }]}>
-            <Input placeholder="请输入主播名称" />
+          <Form.Item 
+            name="anchorName" 
+            label="主播名称" 
+            rules={[
+              { required: true, message: '请输入主播名称' },
+              { min: 2, message: '主播名称至少2个字符' },
+              { max: 20, message: '主播名称最多20个字符' }
+            ]}
+          >
+            <Input placeholder="请输入主播名称" maxLength={20} />
           </Form.Item>
-          <Form.Item name="crawlFrequency" label="抓取频率" rules={[{ required: true }]}>
-            <Select>
+          <Form.Item 
+            name="crawlFrequency" 
+            label="抓取频率" 
+            rules={[{ required: true, message: '请选择抓取频率' }]}
+          >
+            <Select placeholder="请选择抓取频率">
               <Select.Option value={5}>5分钟</Select.Option>
               <Select.Option value={10}>10分钟</Select.Option>
               <Select.Option value={30}>30分钟</Select.Option>
