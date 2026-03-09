@@ -125,7 +125,7 @@ jobs:
           
           echo "=== 部署完成 ==="
     
-    # 8. 通知结果（可选）
+    # 9. 通知结果（可选）
     - name: Deployment Notification
       if: always()
       run: |
