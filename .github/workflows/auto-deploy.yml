@@ -22,19 +22,33 @@ jobs:
         distribution: 'temurin'
         cache: maven
     
-    # 3. 构建后端
+    # 3. 设置Node.js并构建前端
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: './wolfpack-dashboard/package-lock.json'
+    
+    - name: Build Frontend
+      working-directory: ./wolfpack-dashboard
+      run: |
+        npm ci
+        npm run build
+    
+    # 4. 构建后端
     - name: Build Backend
       working-directory: ./wolfpack-backend
       run: mvn clean package -DskipTests -B
     
-    # 4. 构建Docker镜像并导出
+    # 5. 构建Docker镜像并导出
     - name: Build Docker Image
       working-directory: ./wolfpack-backend
       run: |
         docker build -t wolfpack-backend:latest .
         docker save wolfpack-backend:latest | gzip > wolfpack-backend.tar.gz
     
-    # 5. 上传后端镜像到服务器
+    # 6. 上传后端镜像到服务器
     - name: Upload Backend Image to Server
       uses: appleboy/scp-action@master
       with:
@@ -46,7 +60,7 @@ jobs:
         target: "/opt/wolfpack-java/"
         strip_components: 1
     
-    # 6. 上传前端代码到服务器
+    # 7. 上传前端代码到服务器
     - name: Upload Frontend to Server
       uses: appleboy/scp-action@master
       with:
