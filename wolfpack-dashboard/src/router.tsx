@@ -11,6 +11,8 @@ import Alerts from '@/pages/Alerts';
 import Settings from '@/pages/Settings';
 import NotFound from '@/pages/NotFound';
 import SkillManagement from '@/pages/Skills';
+import AgentMonitor from '@/pages/Agents';
+import AgentConfig from '@/pages/Agents/config';
 
 const router = createBrowserRouter([
   {
@@ -18,8 +20,8 @@ const router = createBrowserRouter([
     element: <MainLayout />,
     children: [
       { index: true, element: <Dashboard /> },
-      { path: 'agents', element: <div style={{ color: '#fff' }}>代理监控（开发中）</div> },
-      { path: 'agents/config', element: <div style={{ color: '#fff' }}>代理配置（开发中）</div> },
+      { path: 'agents', element: <AgentMonitor /> },
+      { path: 'agents/config', element: <AgentConfig /> },
       { path: 'live/rooms', element: <LiveRoomList /> },
       { path: 'live/tasks', element: <LiveTaskControl /> },
       { path: 'live/data', element: <DataQuery /> },
