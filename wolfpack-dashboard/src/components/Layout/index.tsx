@@ -8,6 +8,7 @@ import {
   SettingOutlined,
   VideoCameraOutlined,
   BellOutlined,
+  ToolOutlined,
 } from '@ant-design/icons';
 import { Layout, Menu, Badge, theme } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
@@ -45,7 +46,7 @@ const menuItems = [
     icon: <FileTextOutlined />,
     label: '配置中心',
     children: [
-      { key: '/files', label: 'SOUL文件' },
+      { key: '/files', label: 'Claw文件' },
       { key: '/files/config', label: '配置文件' },
       { key: '/files/logs', label: '操作日志' },
     ],
@@ -68,6 +69,11 @@ const menuItems = [
     key: '/alerts',
     icon: <BellOutlined />,
     label: '告警中心',
+  },
+  {
+    key: '/skills',
+    icon: <ToolOutlined />,
+    label: '技能管理',
   },
   {
     key: '/settings',

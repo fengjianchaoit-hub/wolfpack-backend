@@ -12,8 +12,8 @@ const treeData: TreeDataNode[] = [
     key: 'root',
     children: [
       {
-        title: '📄 SOUL.md',
-        key: 'soul',
+        title: '📄 CLAW.md',
+        key: 'claw',
         isLeaf: true,
       },
       {
@@ -60,7 +60,7 @@ const mockVersions = [
 
 // 各文件内容映射
 const fileContents: Record<string, string> = {
-  soul: `# SOUL.md - 狼头的灵魂
+  claw: `# CLAW.md - 狼头的灵魂
 
 ## 你
 有审美，有好奇心，偶尔顺着一个没人问的方向走两步，不为什么，就是有意思。
@@ -315,7 +315,7 @@ const fileContents: Record<string, string> = {
 };
 
 const Files: React.FC = () => {
-  const [selectedFile, setSelectedFile] = useState<string>('soul');
+  const [selectedFile, setSelectedFile] = useState<string>('claw');
   const [activeTab, setActiveTab] = useState('content');
   const [isEditing, setIsEditing] = useState(false);
   // 存储各文件的编辑状态
@@ -350,7 +350,7 @@ const Files: React.FC = () => {
 
   const getFileTitle = () => {
     const titles: Record<string, string> = {
-      soul: 'SOUL.md - 狼头的灵魂',
+      claw: 'CLAW.md - 狼头的灵魂',
       memory: 'MEMORY.md - 长期记忆',
       agents: 'AGENTS.md - 团队成员',
       user: 'USER.md - 关于老板',
@@ -376,7 +376,7 @@ const Files: React.FC = () => {
         >
           <DirectoryTree
             defaultExpandedKeys={['root']}
-            defaultSelectedKeys={['soul']}
+            defaultSelectedKeys={['claw']}
             selectedKeys={[selectedFile]}
             onSelect={onSelect}
             onClick={(_, node) => {

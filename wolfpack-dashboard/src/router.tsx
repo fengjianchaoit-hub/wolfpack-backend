@@ -10,6 +10,7 @@ import System from '@/pages/System';
 import Alerts from '@/pages/Alerts';
 import Settings from '@/pages/Settings';
 import NotFound from '@/pages/NotFound';
+import SkillManagement from '@/pages/Skills';
 
 const router = createBrowserRouter([
   {
@@ -30,6 +31,7 @@ const router = createBrowserRouter([
       { path: 'system/containers', element: <System /> },
       { path: 'schedule', element: <div style={{ color: '#fff' }}>任务调度（开发中）</div> },
       { path: 'alerts', element: <Alerts /> },
+      { path: 'skills', element: <SkillManagement /> },
       { path: 'settings', element: <Settings /> },
       { path: '*', element: <NotFound /> },
     ],
