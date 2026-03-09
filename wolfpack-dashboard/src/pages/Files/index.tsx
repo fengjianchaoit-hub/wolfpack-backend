@@ -330,8 +330,10 @@ const Files: React.FC = () => {
   };
 
   const onSelect = (keys: React.Key[], info: any) => {
-    if (info.node.isLeaf) {
+    console.log('Selected:', keys, info);
+    if (keys.length > 0 && info.node?.isLeaf) {
       const newKey = keys[0] as string;
+      console.log('Switching to file:', newKey);
       setSelectedFile(newKey);
       setIsEditing(false);
     }
@@ -377,6 +379,12 @@ const Files: React.FC = () => {
             defaultSelectedKeys={['soul']}
             selectedKeys={[selectedFile]}
             onSelect={onSelect}
+            onClick={(_, node) => {
+              if (node.isLeaf) {
+                setSelectedFile(node.key as string);
+                setIsEditing(false);
+              }
+            }}
             treeData={treeData}
             style={{ background: 'transparent' }}
           />
