@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Row, Col, Card, Button, Space, Radio, Typography, Drawer } from 'antd';
+import { Row, Col, Card, Button, Space, Radio, Typography } from 'antd';
 import { ReloadOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import KpiCard from '@/components/KpiCard';
 import TrendChart from '@/components/TrendChart';
 import TaskTable from '@/components/TaskTable';
+import AgentDrawer from '@/components/AgentDrawer';
 import type { Task, TrendData, Agent } from '@/types';
 import styles from './index.module.css';
 
@@ -41,7 +42,6 @@ const Dashboard: React.FC = () => {
   const [loading] = useState(false);
   const [filter, setFilter] = useState('all');
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [, setSelectedTask] = useState<Task | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
 
   const kpiData = {
@@ -51,8 +51,12 @@ const Dashboard: React.FC = () => {
     systemHealth: { value: 87.5, suffix: '%', trend: -2, subtitle: '狼牙02备份超时', status: 'warning' as const },
   };
 
-  const handleViewDetail = (task: Task) => {
-    setSelectedTask(task);
+  const handleViewDetail = (_task: Task) => {
+    setSelectedAgent(mockAgent);
+    setDrawerOpen(true);
+  };
+
+  const handleKpiClick = () => {
     setSelectedAgent(mockAgent);
     setDrawerOpen(true);
   };
@@ -88,7 +92,7 @@ const Dashboard: React.FC = () => {
             trend={kpiData.activeAgents.trend}
             subtitle={kpiData.activeAgents.subtitle}
             status="success"
-            onClick={() => setDrawerOpen(true)}
+            onClick={handleKpiClick}
           />
         </Col>
         <Col xs={24} sm={12} lg={6}>
@@ -157,71 +161,11 @@ const Dashboard: React.FC = () => {
         <TaskTable data={filteredTasks} loading={loading} onViewDetail={handleViewDetail} />
       </Card>
 
-      <Drawer
-        title={
-          <div>
-            <div style={{ color: '#f0f6fc', fontSize: 18, fontWeight: 600 }}>
-              🤖 {selectedAgent?.name || '代理详情'}
-            </div>
-            <div style={{ color: '#8b949e', fontSize: 13, marginTop: 4 }}>
-              ID: {selectedAgent?.id} | 状态: 在线
-            </div>
-          </div>
-        }
-        placement="right"
-        width={600}
-        onClose={() => setDrawerOpen(false)}
+      <AgentDrawer 
+        agent={selectedAgent}
         open={drawerOpen}
-        styles={{
-          header: { background: '#161b22', borderBottom: '1px solid #30363d' },
-          body: { background: '#0f1419' },
-        }}
-      >
-        <div className={styles.drawerTabs}>
-          <div className={`${styles.tab} ${styles.activeTab}`}>任务活动</div>
-          <div className={styles.tab}>资源趋势</div>
-          <div className={styles.tab}>异常日志</div>
-          <div className={styles.tab}>配置管理</div>
-        </div>
-        
-        <div className={styles.drawerContent}>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>今日任务</span>
-            <span className={styles.infoValue}>4个（成功3个，失败1个已重试）</span>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>当前任务</span>
-            <span className={styles.infoValue} style={{ color: '#58a6ff' }}>AI热点日报生成中... (75%)</span>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>CPU使用率</span>
-            <span className={styles.infoValue}>34% (正常)</span>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>内存占用</span>
-            <span className={styles.infoValue}>1.2GB / 4GB</span>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>最后心跳</span>
-            <span className={styles.infoValue}>2秒前</span>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>运行时长</span>
-            <span className={styles.infoValue}>45天3小时12分</span>
-          </div>
-          
-          <hr style={{ borderColor: '#30363d', margin: '20px 0' }} />
-          
-          <div style={{ fontSize: 14, color: '#8b949e', marginBottom: 12 }}>近5次任务执行</div>
-          <div style={{ background: '#161b22', borderRadius: 8, padding: 12, fontSize: 13, fontFamily: 'monospace' }}>
-            <div style={{ color: '#3fb950' }}>✓ 09:00 AI热点日报 (4分32秒)</div>
-            <div style={{ color: '#3fb950', marginTop: 4 }}>✓ 08:00 数据同步 (2分15秒)</div>
-            <div style={{ color: '#3fb950', marginTop: 4 }}>✓ 07:00 日志归档 (45秒)</div>
-            <div style={{ color: '#f85149', marginTop: 4 }}>✗ 06:30 报表生成 (失败-已重试)</div>
-            <div style={{ color: '#3fb950', marginTop: 4 }}>✓ 06:00 健康检查 (12秒)</div>
-          </div>
-        </div>
-      </Drawer>
+        onClose={() => setDrawerOpen(false)}
+      />
     </div>
   );
 };

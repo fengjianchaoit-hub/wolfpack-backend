@@ -1,0 +1,36 @@
+.drawerTabs {
+  display: flex;
+  border-bottom: 1px solid #30363d;
+  background: #161b22;
+  padding: 0 24px;
+}
+
+.tab {
+  padding: 12px 20px;
+  font-size: 14px;
+  color: #8b949e;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: #c9d1d9;
+}
+
+.activeTab {
+  color: #58a6ff;
+  border-bottom-color: #58a6ff;
+  font-weight: 500;
+}
+
+.drawerContent {
+  padding: 20px 24px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+}
+
+:global(.ant-timeline-item-left .ant-timeline-item-content) {
+  margin-left: 28px;
+}
