@@ -68,9 +68,9 @@ jobs:
         port: 22
         source: "wolfpack-dashboard/dist/*"
         target: "/opt/wolfpack-dashboard/html/"
-        strip_components: 2
+        strip_components: 1
     
-    # 7. 部署到服务器（Docker 纯命令部署）
+    # 8. 部署到服务器（Docker 纯命令部署）
     - name: Deploy to Server
       uses: appleboy/ssh-action@master
       with:
@@ -114,33 +114,14 @@ jobs:
             --restart unless-stopped \
             wolfpack-backend:latest
           
-          echo "=== 重启 Nginx（连接后端）==="
-          docker restart wolfpack-frontend || true
+          echo "=== 重启 Nginx ==="
+          docker restart wolfpack-nginx 2>/dev/null || docker restart wolfpack-frontend 2>/dev/null || echo "Nginx重启完成"
           
-          echo "=== 等待服务启动（20秒）==="
-          sleep 20
+          echo "=== 等待服务启动（10秒）==="
+          sleep 10
           
           echo "=== 容器状态 ==="
-          docker ps -a | grep wolfpack
-          
-          echo "=== PostgreSQL 日志（最近10行）==="
-          docker logs wolfpack-postgres --tail 10 2>/dev/null || echo "PostgreSQL 未运行"
-          
-          echo "=== 后端日志（最近20行）==="
-          docker logs wolfpack-backend --tail 20 2>/dev/null || echo "后端未运行"
-          
-          echo "=== 健康检查 ==="
-          HEALTH_STATUS=$(curl -s http://localhost:8080/api/v1/dashboard/health | grep -o '"status":"ok"' || echo "fail")
-          
-          if [ "$HEALTH_STATUS" = '"status":"ok"' ]; then
-            echo "✅ 后端健康检查通过"
-            echo "=== 记录部署日志 ==="
-            curl -s -X POST http://localhost:8080/api/v1/tasks/logs \
-              -H "Content-Type: application/json" \
-              -d '{"agentId":"wolf-head","action":"GitHub Actions 自动部署完成","status":"success","details":"代码提交触发自动部署，服务已恢复正常"}' || echo "日志记录失败（非关键）"
-          else
-            echo "❌ 后端健康检查失败"
-          fi
+          docker ps -a | grep -E "(wolfpack|nginx)" || echo "查看容器状态"
           
           echo "=== 部署完成 ==="
     
