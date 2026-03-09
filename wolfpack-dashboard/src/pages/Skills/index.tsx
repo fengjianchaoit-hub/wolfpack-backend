@@ -11,7 +11,6 @@ import {
   CodeOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import styles from './index.module.css';
 
 const { Title, Text } = Typography;
 
@@ -98,7 +97,7 @@ const mockSkills: Skill[] = [
 ];
 
 const SkillManagement: React.FC = () => {
-  const [skills, setSkills] = useState(mockSkills);
+  const [skills] = useState(mockSkills);
 
   const columns: ColumnsType<Skill> = [
     {

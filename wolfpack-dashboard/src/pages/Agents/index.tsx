@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, Row, Col, Statistic, Badge, Table, Button, Space, Tag, Progress, Avatar, Typography, Tooltip, Dropdown } from 'antd';
 import {
   RobotOutlined,
@@ -18,7 +18,7 @@ import type { ColumnsType } from 'antd/es/table';
 import type { MenuProps } from 'antd';
 import styles from './index.module.css';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 interface Agent {
   id: string;
@@ -106,7 +106,7 @@ const mockAgents: Agent[] = [
 ];
 
 const AgentMonitor: React.FC = () => {
-  const [agents, setAgents] = useState<Agent[]>(mockAgents);
+  const [agents] = useState<Agent[]>(mockAgents);
   const [loading, setLoading] = useState(false);
 
   const refreshData = () => {
@@ -432,7 +432,7 @@ const AgentMonitor: React.FC = () => {
               </div>
               <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {agent.capabilities.map(cap => (
-                  <Tag key={cap} size="small" style={{ background: '#21262d', border: 'none', color: '#8b949e' }}>
+                  <Tag key={cap} style={{ background: '#21262d', border: 'none', color: '#8b949e' }}>
                     {cap}
                   </Tag>
                 ))}

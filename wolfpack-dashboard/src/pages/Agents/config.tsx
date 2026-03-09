@@ -6,14 +6,11 @@ import {
   RobotOutlined,
   ThunderboltOutlined,
   ClockCircleOutlined,
-  MessageOutlined,
-  DatabaseOutlined,
-  ApiOutlined,
   SafetyCertificateOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
-import styles from './index.module.css';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const { TextArea } = Input;
 
 interface AgentConfig {
@@ -90,7 +87,7 @@ const AgentConfigPage: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      const values = await form.validateFields();
+      await form.validateFields();
       setLoading(true);
       
       // 模拟保存
