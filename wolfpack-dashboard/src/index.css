@@ -1,0 +1,102 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: #0f1419;
+  color: #c9d1d9;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Ant Design 深色主题覆盖 */
+.ant-layout {
+  background: #0f1419 !important;
+}
+
+.ant-layout-sider {
+  background: #161b22 !important;
+}
+
+.ant-menu-dark {
+  background: #161b22 !important;
+}
+
+.ant-menu-dark .ant-menu-item-selected {
+  background: #21262d !important;
+}
+
+.ant-card {
+  background: #161b22 !important;
+  border-color: #30363d !important;
+}
+
+.ant-card-head {
+  background: #161b22 !important;
+  border-bottom-color: #30363d !important;
+}
+
+.ant-table {
+  background: #161b22 !important;
+}
+
+.ant-table-thead > tr > th {
+  background: #21262d !important;
+  border-bottom-color: #30363d !important;
+  color: #8b949e !important;
+}
+
+.ant-table-tbody > tr > td {
+  border-bottom-color: #21262d !important;
+  color: #c9d1d9 !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: #21262d !important;
+}
+
+.ant-drawer-content {
+  background: #161b22 !important;
+}
+
+.ant-drawer-header {
+  background: #161b22 !important;
+  border-bottom-color: #30363d !important;
+}
+
+.ant-radio-button-wrapper {
+  background: #21262d !important;
+  border-color: #30363d !important;
+  color: #c9d1d9 !important;
+}
+
+.ant-radio-button-wrapper-checked {
+  background: #238636 !important;
+  border-color: #238636 !important;
+  color: #fff !important;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f1419;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #484f58;
+}
