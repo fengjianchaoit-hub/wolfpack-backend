@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Card, Table, Tag, Button, Space, Badge, Typography, Tooltip,
-  Modal, Form, Input, Select, message, Popconfirm, Spin, Divider
+  Modal, Form, Input, Select, message, Popconfirm, Spin
 } from 'antd';
 import {
   GithubOutlined,
