@@ -1,9 +1,11 @@
 package com.wolfpack.admin.config;
 
 import com.wolfpack.admin.entity.Agent;
+import com.wolfpack.admin.entity.Skill;
 import com.wolfpack.admin.entity.Task;
 import com.wolfpack.admin.repository.AgentJpaRepository;
 import com.wolfpack.admin.repository.ExecutionLogJpaRepository;
+import com.wolfpack.admin.repository.SkillRepository;
 import com.wolfpack.admin.repository.TaskJpaRepository;
 import com.wolfpack.admin.util.BeijingTimeUtil;
 import com.wolfpack.api.enums.AgentStatus;
@@ -14,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 /**
  * 数据初始化器 - 应用启动时初始化基础数据
@@ -26,6 +30,7 @@ public class DataInitializer implements CommandLineRunner {
     private final AgentJpaRepository agentRepository;
     private final TaskJpaRepository taskRepository;
     private final ExecutionLogJpaRepository logRepository;
+    private final SkillRepository skillRepository;
 
     @Override
     @Transactional
@@ -35,6 +40,7 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Initializing database with default data...");
             initAgents();
             initTasks();
+            initSkills();
             // 不再初始化假日志，等待真实操作产生
             log.info("Database initialized successfully (logs will be created by real operations)");
         } else {
@@ -169,5 +175,92 @@ public class DataInitializer implements CommandLineRunner {
         taskRepository.save(t7);
 
         log.info("Initialized {} tasks", taskRepository.count());
+    }
+
+    private void initSkills() {
+        if (skillRepository.count() > 0) {
+            log.info("Skills already initialized, skipping");
+            return;
+        }
+
+        // E2E测试技能
+        Skill s1 = new Skill();
+        s1.setName("Wolfpack E2E 测试");
+        s1.setDescription("基于 Playwright 的全自动化测试技能，覆盖元素/流程/数据/异常四大校验维度");
+        s1.setCategory(Skill.SkillCategory.TESTING);
+        s1.setStatus(Skill.SkillStatus.ACTIVE);
+        s1.setVersion("1.0.0");
+        s1.setCodeUrl("https://github.com/fengjianchaoit-hub/wolfpack-backend/tree/main/skills/wolfpack-e2e-test");
+        s1.setAuthor("狼头");
+        s1.setUsageCount(15);
+        s1.setTags("playwright,e2e,automation,testing");
+        skillRepository.save(s1);
+
+        // 飞书同步技能
+        Skill s2 = new Skill();
+        s2.setName("飞书IM同步");
+        s2.setDescription("将Kimi对话记录自动同步到飞书群，支持定时推送和手动触发");
+        s2.setCategory(Skill.SkillCategory.INTEGRATION);
+        s2.setStatus(Skill.SkillStatus.ACTIVE);
+        s2.setVersion("1.2.0");
+        s2.setCodeUrl("https://github.com/fengjianchaoit-hub/wolfpack-backend/tree/main/skills/feishu-sync");
+        s2.setAuthor("狼牙01");
+        s2.setUsageCount(128);
+        s2.setTags("feishu,webhook,sync,integration");
+        skillRepository.save(s2);
+
+        // 抖音数据抓取技能
+        Skill s3 = new Skill();
+        s3.setName("抖音直播数据抓取");
+        s3.setDescription("自动化抓取抖音直播间数据，支持多直播间监控和数据存储");
+        s3.setCategory(Skill.SkillCategory.AUTOMATION);
+        s3.setStatus(Skill.SkillStatus.ACTIVE);
+        s3.setVersion("2.1.0");
+        s3.setCodeUrl("https://github.com/fengjianchaoit-hub/wolfpack-backend/tree/main/skills/douyin-live-grabber");
+        s3.setAuthor("狼头");
+        s3.setUsageCount(342);
+        s3.setTags("douyin,crawler,livestream,data");
+        skillRepository.save(s3);
+
+        // 任务调度器技能
+        Skill s4 = new Skill();
+        s4.setName("狼牙任务调度器");
+        s4.setDescription("定时任务调度与监控，支持失败重试和告警通知");
+        s4.setCategory(Skill.SkillCategory.AUTOMATION);
+        s4.setStatus(Skill.SkillStatus.ACTIVE);
+        s4.setVersion("1.5.0");
+        s4.setCodeUrl("https://github.com/fengjianchaoit-hub/wolfpack-backend/tree/main/skills/task-scheduler");
+        s4.setAuthor("狼牙02");
+        s4.setUsageCount(567);
+        s4.setTags("scheduler,cron,monitoring,automation");
+        skillRepository.save(s4);
+
+        // 企业微信适配器（开发中）
+        Skill s5 = new Skill();
+        s5.setName("企业微信适配器");
+        s5.setDescription("企业微信IM集成，支持多租户和权限控制");
+        s5.setCategory(Skill.SkillCategory.INTEGRATION);
+        s5.setStatus(Skill.SkillStatus.DEVELOPMENT);
+        s5.setVersion("0.3.0");
+        s5.setCodeUrl("https://github.com/fengjianchaoit-hub/wolfpack-backend/tree/main/skills/wecom-adapter");
+        s5.setAuthor("狼头");
+        s5.setUsageCount(0);
+        s5.setTags("wecom,enterprise,im,integration");
+        skillRepository.save(s5);
+
+        // Redis缓存技能
+        Skill s6 = new Skill();
+        s6.setName("Redis缓存管理");
+        s6.setDescription("基于Redis的技能数据缓存，60秒过期策略");
+        s6.setCategory(Skill.SkillCategory.MONITORING);
+        s6.setStatus(Skill.SkillStatus.ACTIVE);
+        s6.setVersion("1.0.0");
+        s6.setCodeUrl("https://github.com/fengjianchaoit-hub/wolfpack-backend");
+        s6.setAuthor("狼头");
+        s6.setUsageCount(89);
+        s6.setTags("redis,cache,performance");
+        skillRepository.save(s6);
+
+        log.info("Initialized {} skills", skillRepository.count());
     }
 }
