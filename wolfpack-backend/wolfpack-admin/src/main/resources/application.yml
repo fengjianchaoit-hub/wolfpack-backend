@@ -7,6 +7,21 @@ spring:
   application:
     name: wolfpack-admin
   
+  # Redis缓存配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+      database: 0
+  
+  # 缓存配置 - 执行日志缓存60秒
+  cache:
+    type: redis
+    redis:
+      time-to-live: 60000  # 60秒过期
+      cache-null-values: false
+  
   # PostgreSQL数据库配置（支持环境变量覆盖）
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/wolfpack}

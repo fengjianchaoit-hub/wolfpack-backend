@@ -1,6 +1,17 @@
 version: '3.8'
 
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: wolfpack-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - wolfpack-network
+
   postgres:
     image: postgres:15-alpine
     container_name: wolfpack-postgres
@@ -26,8 +37,11 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/wolfpack
       - SPRING_DATASOURCE_USERNAME=wolfpack
       - SPRING_DATASOURCE_PASSWORD=wolfpack123
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
       - postgres
+      - redis
     restart: unless-stopped
     networks:
       - wolfpack-network
@@ -52,6 +66,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   wolfpack-network:
