@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Row, Col, Card, Button, Space, Radio, Typography } from 'antd';
-import { ReloadOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { Row, Col, Card, Button, Space, Radio, Typography, Tag } from 'antd';
+import { ReloadOutlined, ExclamationCircleOutlined, ToolOutlined, GithubOutlined, ArrowRightOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import KpiCard from '@/components/KpiCard';
 import TrendChart from '@/components/TrendChart';
 import TaskTable from '@/components/TaskTable';
@@ -9,6 +10,13 @@ import type { Task, TrendData, Agent } from '@/types';
 import styles from './index.module.css';
 
 const { Title, Text } = Typography;
+
+interface Skill {
+  id: string;
+  name: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'DEVELOPMENT';
+  usageCount: number;
+}
 
 // 模拟数据
 const mockTasks: Task[] = [
@@ -39,10 +47,43 @@ const mockAgent: Agent = {
 };
 
 const Dashboard: React.FC = () => {
-  const [loading] = useState(false);
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  
+  // 技能管理数据
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [skillsLoading, setSkillsLoading] = useState(false);
+
+  // 获取技能数据
+  const fetchSkills = async () => {
+    setSkillsLoading(true);
+    try {
+      const response = await fetch('/api/v1/skills');
+      const result = await response.json();
+      if (result.code === 200) {
+        setSkills(result.data || []);
+      }
+    } catch (error) {
+      console.error('获取技能数据失败:', error);
+    } finally {
+      setSkillsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSkills();
+    // 每30秒刷新一次技能数据
+    const timer = setInterval(fetchSkills, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // 技能统计数据
+  const activeSkillsCount = skills.filter(s => s.status === 'ACTIVE').length;
+  const devSkillsCount = skills.filter(s => s.status === 'DEVELOPMENT').length;
+  const totalUsage = skills.reduce((sum, s) => sum + (s.usageCount || 0), 0);
 
   const kpiData = {
     activeAgents: { value: 3, total: 3, trend: 100, subtitle: '全部代理在线运行中' },
@@ -127,6 +168,90 @@ const Dashboard: React.FC = () => {
           />
         </Col>
       </Row>
+
+      {/* 技能管理概览卡片 - 新增 */}
+      <Card
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ToolOutlined style={{ color: '#58a6ff' }} />
+            <span style={{ color: '#f0f6fc' }}>技能管理概览</span>
+            <Tag style={{ background: '#238636', color: '#fff', border: 'none' }}>实时</Tag>
+          </div>
+        }
+        extra={
+          <Button 
+            type="primary" 
+            icon={<ArrowRightOutlined />}
+            onClick={() => navigate('/skills')}
+          >
+            进入技能管理
+          </Button>
+        }
+        styles={{
+          header: { background: '#161b22', borderBottom: '1px solid #30363d' },
+          body: { background: '#161b22' },
+        }}
+        style={{ marginBottom: 20 }}
+      >
+        <Row gutter={[20, 20]}>
+          <Col xs={24} sm={12} md={6}>
+            <div style={{ textAlign: 'center', padding: '12px 0' }}>
+              <div style={{ fontSize: 36, color: '#3fb950', fontWeight: 'bold' }}>
+                {skillsLoading ? '-' : activeSkillsCount}
+              </div>
+              <div style={{ color: '#8b949e', marginTop: 8 }}>生产中技能</div>
+              <div style={{ color: '#3fb950', fontSize: 12, marginTop: 4 }}>● 运行正常</div>
+            </div>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <div style={{ textAlign: 'center', padding: '12px 0' }}>
+              <div style={{ fontSize: 36, color: '#d29922', fontWeight: 'bold' }}>
+                {skillsLoading ? '-' : devSkillsCount}
+              </div>
+              <div style={{ color: '#8b949e', marginTop: 8 }}>开发中</div>
+              <div style={{ color: '#d29922', fontSize: 12, marginTop: 4 }}>⚡ 待上线</div>
+            </div>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <div style={{ textAlign: 'center', padding: '12px 0' }}>
+              <div style={{ fontSize: 36, color: '#58a6ff', fontWeight: 'bold' }}>
+                {skillsLoading ? '-' : totalUsage.toLocaleString()}
+              </div>
+              <div style={{ color: '#8b949e', marginTop: 8 }}>总调用次数</div>
+              <div style={{ color: '#58a6ff', fontSize: 12, marginTop: 4 }}>📈 累计</div>
+            </div>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <div style={{ textAlign: 'center', padding: '12px 0' }}>
+              <div style={{ fontSize: 36, color: '#a371f7', fontWeight: 'bold' }}>
+                {skillsLoading ? '-' : skills.length}
+              </div>
+              <div style={{ color: '#8b949e', marginTop: 8 }}>技能总数</div>
+              <Button 
+                type="link" 
+                size="small"
+                icon={<GithubOutlined />}
+                onClick={() => window.open('https://github.com/fengjianchaoit-hub/wolfpack-backend/tree/main/.openclaw/skills', '_blank')}
+              >
+                查看仓库
+              </Button>
+            </div>
+          </Col>
+        </Row>
+        
+        {/* 快速操作按钮 */}
+        <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #30363d', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <Button icon={<ToolOutlined />} onClick={() => navigate('/skills')}>
+            管理技能
+          </Button>
+          <Button icon={<GithubOutlined />} onClick={() => window.open('https://github.com/fengjianchaoit-hub/wolfpack-backend/tree/main/.openclaw/skills', '_blank')}>
+            技能仓库
+          </Button>
+          <Button type="primary" onClick={() => navigate('/skills')}>
+            新增技能
+          </Button>
+        </div>
+      </Card>
 
       <Row gutter={[20, 20]} className={styles.chartRow}>
         <Col xs={24} lg={16}>
