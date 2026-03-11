@@ -62,7 +62,6 @@ public class SkillService {
         skill.setVersion(skillUpdate.getVersion());
         skill.setCodeUrl(skillUpdate.getCodeUrl());
         skill.setAuthor(skillUpdate.getAuthor());
-        skill.setTags(skillUpdate.getTags());
         skill.setLastUpdated(LocalDateTime.now());
         
         Skill saved = skillRepository.save(skill);
