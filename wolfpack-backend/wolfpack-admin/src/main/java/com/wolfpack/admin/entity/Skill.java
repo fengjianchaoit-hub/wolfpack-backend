@@ -47,8 +47,28 @@ public class Skill {
     @Column(name = "usage_count")
     private Integer usageCount = 0;
 
-    @Column(length = 500)
-    private String tags;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "skill_type", nullable = false)
+    private SkillType skillType = SkillType.TOOL;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Visibility visibility = Visibility.DASHBOARD;
+
+    @Column(name = "mcp_endpoint", length = 500)
+    private String mcpEndpoint;
+
+    @Column(name = "input_schema", length = 2000)
+    private String inputSchema;
+
+    @Column(name = "output_schema", length = 2000)
+    private String outputSchema;
+
+    @Column(name = "icon")
+    private String icon;
+
+    @Column(name = "display_order")
+    private Integer displayOrder = 0;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -95,6 +115,41 @@ public class Skill {
         private final String label;
 
         SkillStatus(String label) {
+            this.label = label;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+    }
+
+    public enum SkillType {
+        TOOL("工具"),
+        MCP_SERVER("MCP服务器"),
+        MCP_TOOL("MCP工具"),
+        WORKFLOW("工作流"),
+        AGENT("智能体");
+
+        private final String label;
+
+        SkillType(String label) {
+            this.label = label;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+    }
+
+    public enum Visibility {
+        DASHBOARD("仪表盘展示"),
+        INTERNAL("内部使用"),
+        PUBLIC("公开"),
+        PRIVATE("私有");
+
+        private final String label;
+
+        Visibility(String label) {
             this.label = label;
         }
 

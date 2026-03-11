@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Button, Space, Radio, Typography, Tag } from 'antd';
+import { Row, Col, Card, Button, Space, Radio, Typography, Tag, Badge, Spin } from 'antd';
 import { ReloadOutlined, ExclamationCircleOutlined, ToolOutlined, GithubOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import KpiCard from '@/components/KpiCard';
@@ -14,8 +14,16 @@ const { Title, Text } = Typography;
 interface Skill {
   id: string;
   name: string;
+  description: string;
+  category: string;
   status: 'ACTIVE' | 'INACTIVE' | 'DEVELOPMENT';
+  skillType: 'TOOL' | 'MCP_SERVER' | 'MCP_TOOL' | 'WORKFLOW' | 'AGENT';
+  visibility: 'DASHBOARD' | 'INTERNAL' | 'PUBLIC' | 'PRIVATE';
+  version: string;
   usageCount: number;
+  icon?: string;
+  displayOrder?: number;
+  mcpEndpoint?: string;
 }
 
 // 模拟数据
@@ -48,7 +56,7 @@ const mockAgent: Agent = {
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [filter, setFilter] = useState('all');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
@@ -64,7 +72,11 @@ const Dashboard: React.FC = () => {
       const response = await fetch('/api/v1/skills');
       const result = await response.json();
       if (result.code === 200) {
-        setSkills(result.data || []);
+        // 只展示visibility为DASHBOARD的技能
+        const dashboardSkills = (result.data || []).filter(
+          (s: Skill) => s.visibility === 'DASHBOARD' && s.status === 'ACTIVE'
+        );
+        setSkills(dashboardSkills);
       }
     } catch (error) {
       console.error('获取技能数据失败:', error);
@@ -75,15 +87,26 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchSkills();
-    // 每30秒刷新一次技能数据
     const timer = setInterval(fetchSkills, 30000);
     return () => clearInterval(timer);
   }, []);
 
-  // 技能统计数据
-  const activeSkillsCount = skills.filter(s => s.status === 'ACTIVE').length;
-  const devSkillsCount = skills.filter(s => s.status === 'DEVELOPMENT').length;
-  const totalUsage = skills.reduce((sum, s) => sum + (s.usageCount || 0), 0);
+  // 按类型分组技能
+  const mcpTools = skills.filter(s => s.skillType === 'MCP_TOOL' || s.skillType === 'MCP_SERVER');
+  const systemTools = skills.filter(s => s.skillType === 'TOOL');
+  const integrations = skills.filter(s => s.category === 'INTEGRATION' && s.skillType === 'TOOL');
+
+  // 技能类型标签
+  const getSkillTypeTag = (type: string) => {
+    const config: Record<string, { color: string; text: string }> = {
+      MCP_TOOL: { color: '#a371f7', text: 'MCP工具' },
+      MCP_SERVER: { color: '#bf3989', text: 'MCP服务' },
+      TOOL: { color: '#58a6ff', text: '工具' },
+      WORKFLOW: { color: '#d29922', text: '工作流' },
+      AGENT: { color: '#3fb950', text: '智能体' },
+    };
+    return config[type] || { color: '#8b949e', text: type };
+  };
 
   const kpiData = {
     activeAgents: { value: 3, total: 3, trend: 100, subtitle: '全部代理在线运行中' },
@@ -105,6 +128,41 @@ const Dashboard: React.FC = () => {
   const filteredTasks = filter === 'abnormal' 
     ? mockTasks.filter(t => t.status === 'FAILED' || t.status === 'TIMEOUT')
     : mockTasks;
+
+  // 渲染技能卡片
+  const renderSkillCard = (skill: Skill) => {
+    const typeTag = getSkillTypeTag(skill.skillType);
+    return (
+      <div key={skill.id} style={{ 
+        padding: 12, 
+        background: '#0d1117', 
+        borderRadius: 8, 
+        marginBottom: 8,
+        border: '1px solid #30363d',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12
+      }}>
+        <div style={{ fontSize: 24 }}>{skill.icon || '🛠️'}</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: '#f0f6fc', fontWeight: 600 }}>{skill.name}</span>
+            <Tag style={{ background: typeTag.color, color: '#fff', border: 'none', fontSize: 10 }}>
+              {typeTag.text}
+            </Tag>
+            <Tag style={{ background: '#238636', color: '#fff', border: 'none', fontSize: 10 }}>
+              v{skill.version}
+            </Tag>
+          </div>
+          <div style={{ color: '#8b949e', fontSize: 12, marginTop: 4 }}>{skill.description}</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <Badge count={skill.usageCount || 0} style={{ backgroundColor: '#58a6ff' }} />
+          <div style={{ color: '#8b949e', fontSize: 10, marginTop: 4 }}>次调用</div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className={styles.container}>
@@ -169,13 +227,14 @@ const Dashboard: React.FC = () => {
         </Col>
       </Row>
 
-      {/* 技能管理概览卡片 - 新增 */}
+      {/* 技能管理概览卡片 */}
       <Card
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <ToolOutlined style={{ color: '#58a6ff' }} />
             <span style={{ color: '#f0f6fc' }}>技能管理概览</span>
             <Tag style={{ background: '#238636', color: '#fff', border: 'none' }}>实时</Tag>
+            <Tag style={{ background: '#a371f7', color: '#fff', border: 'none' }}>{skills.length}个技能</Tag>
           </div>
         }
         extra={
@@ -193,63 +252,62 @@ const Dashboard: React.FC = () => {
         }}
         style={{ marginBottom: 20 }}
       >
-        <Row gutter={[20, 20]}>
-          <Col xs={24} sm={12} md={6}>
-            <div style={{ textAlign: 'center', padding: '12px 0' }}>
-              <div style={{ fontSize: 36, color: '#3fb950', fontWeight: 'bold' }}>
-                {skillsLoading ? '-' : activeSkillsCount}
+        <Spin spinning={skillsLoading}>
+          <Row gutter={[20, 20]}>
+            {/* MCP工具 */}
+            <Col xs={24} md={8}>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ color: '#a371f7', fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>🌐</span> MCP工具
+                  <Tag style={{ background: '#a371f7', color: '#fff', border: 'none', fontSize: 10 }}>
+                    {mcpTools.length}
+                  </Tag>
+                </div>
+                {mcpTools.length > 0 ? mcpTools.map(renderSkillCard) : (
+                  <div style={{ color: '#8b949e', textAlign: 'center', padding: 20 }}>暂无MCP工具</div>
+                )}
               </div>
-              <div style={{ color: '#8b949e', marginTop: 8 }}>生产中技能</div>
-              <div style={{ color: '#3fb950', fontSize: 12, marginTop: 4 }}>● 运行正常</div>
-            </div>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <div style={{ textAlign: 'center', padding: '12px 0' }}>
-              <div style={{ fontSize: 36, color: '#d29922', fontWeight: 'bold' }}>
-                {skillsLoading ? '-' : devSkillsCount}
+            </Col>
+
+            {/* 系统工具 */}
+            <Col xs={24} md={8}>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ color: '#58a6ff', fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>🛠️</span> 系统工具
+                  <Tag style={{ background: '#58a6ff', color: '#fff', border: 'none', fontSize: 10 }}>
+                    {systemTools.length}
+                  </Tag>
+                </div>
+                {systemTools.length > 0 ? systemTools.map(renderSkillCard) : (
+                  <div style={{ color: '#8b949e', textAlign: 'center', padding: 20 }}>暂无系统工具</div>
+                )}
               </div>
-              <div style={{ color: '#8b949e', marginTop: 8 }}>开发中</div>
-              <div style={{ color: '#d29922', fontSize: 12, marginTop: 4 }}>⚡ 待上线</div>
-            </div>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <div style={{ textAlign: 'center', padding: '12px 0' }}>
-              <div style={{ fontSize: 36, color: '#58a6ff', fontWeight: 'bold' }}>
-                {skillsLoading ? '-' : totalUsage.toLocaleString()}
+            </Col>
+
+            {/* 集成工具 */}
+            <Col xs={24} md={8}>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ color: '#3fb950', fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>🔌</span> 集成工具
+                  <Tag style={{ background: '#3fb950', color: '#fff', border: 'none', fontSize: 10 }}>
+                    {integrations.length}
+                  </Tag>
+                </div>
+                {integrations.length > 0 ? integrations.map(renderSkillCard) : (
+                  <div style={{ color: '#8b949e', textAlign: 'center', padding: 20 }}>暂无集成工具</div>
+                )}
               </div>
-              <div style={{ color: '#8b949e', marginTop: 8 }}>总调用次数</div>
-              <div style={{ color: '#58a6ff', fontSize: 12, marginTop: 4 }}>📈 累计</div>
-            </div>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <div style={{ textAlign: 'center', padding: '12px 0' }}>
-              <div style={{ fontSize: 36, color: '#a371f7', fontWeight: 'bold' }}>
-                {skillsLoading ? '-' : skills.length}
-              </div>
-              <div style={{ color: '#8b949e', marginTop: 8 }}>技能总数</div>
-              <Button 
-                type="link" 
-                size="small"
-                icon={<GithubOutlined />}
-                onClick={() => window.open('https://github.com/fengjianchaoit-hub/wolfpack-backend/tree/main/.openclaw/skills', '_blank')}
-              >
-                查看仓库
-              </Button>
-            </div>
-          </Col>
-        </Row>
-        
-        {/* 快速操作按钮 */}
+            </Col>
+          </Row>
+        </Spin>
+
+        {/* 快速操作 */}
         <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #30363d', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <Button icon={<ToolOutlined />} onClick={() => navigate('/skills')}>
-            管理技能
-          </Button>
-          <Button icon={<GithubOutlined />} onClick={() => window.open('https://github.com/fengjianchaoit-hub/wolfpack-backend/tree/main/.openclaw/skills', '_blank')}>
+          <Button icon={<ToolOutlined />} onClick={() => navigate('/skills')}>管理技能</Button>
+          <Button icon={<GithubOutlined />} onClick={() => window.open('https://github.com/fengjianchaoit-hub/wolfpack-backend/tree/main/skills', '_blank')}>
             技能仓库
           </Button>
-          <Button type="primary" onClick={() => navigate('/skills')}>
-            新增技能
-          </Button>
+          <Button type="primary" onClick={() => navigate('/skills')}>新增技能</Button>
         </div>
       </Card>
 
