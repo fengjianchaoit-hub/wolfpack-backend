@@ -1,5 +1,6 @@
 package com.wolfpack.admin.controller;
 
+import com.wolfpack.admin.converter.SkillConverter;
 import com.wolfpack.admin.entity.Skill;
 import com.wolfpack.admin.service.SkillService;
 import com.wolfpack.api.vo.SkillVO;
@@ -13,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 技能管理API控制器
@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 public class SkillController {
 
     private final SkillService skillService;
+    private final SkillConverter skillConverter;
 
     /**
      * 获取所有技能
@@ -34,10 +35,7 @@ public class SkillController {
     @GetMapping
     public R<List<SkillVO>> getAllSkills() {
         List<Skill> skills = skillService.getAllSkills();
-        List<SkillVO> voList = skills.stream()
-            .map(SkillVO::fromEntity)
-            .collect(Collectors.toList());
-        return R.ok(voList);
+        return R.ok(skillConverter.toVOList(skills));
     }
 
     /**
@@ -47,7 +45,7 @@ public class SkillController {
     public R<SkillVO> getSkillById(@PathVariable @NotBlank String id) {
         Skill skill = skillService.getSkillById(id)
             .orElseThrow(() -> new BusinessException(ErrorCode.SKILL_NOT_FOUND));
-        return R.ok(SkillVO.fromEntity(skill));
+        return R.ok(skillConverter.toVO(skill));
     }
 
     /**
@@ -56,7 +54,7 @@ public class SkillController {
     @PostMapping
     public R<SkillVO> createSkill(@RequestBody @Valid Skill skill) {
         Skill saved = skillService.createSkill(skill);
-        return R.ok(SkillVO.fromEntity(saved));
+        return R.ok(skillConverter.toVO(saved));
     }
 
     /**
@@ -67,7 +65,7 @@ public class SkillController {
             @PathVariable @NotBlank String id,
             @RequestBody @Valid Skill skill) {
         Skill updated = skillService.updateSkill(id, skill);
-        return R.ok(SkillVO.fromEntity(updated));
+        return R.ok(skillConverter.toVO(updated));
     }
 
     /**
@@ -78,7 +76,7 @@ public class SkillController {
             @PathVariable @NotBlank String id,
             @RequestBody @Valid StatusUpdateRequest request) {
         Skill updated = skillService.updateSkillStatus(id, request.getStatus());
-        return R.ok(SkillVO.fromEntity(updated));
+        return R.ok(skillConverter.toVO(updated));
     }
 
     /**
