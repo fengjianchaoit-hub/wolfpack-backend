@@ -1,5 +1,7 @@
-package com.wolfpack.common.exception;
+package com.wolfpack.admin.config;
 
+import com.wolfpack.common.exception.BusinessException;
+import com.wolfpack.common.exception.ErrorCode;
 import com.wolfpack.common.utils.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.BindException;
