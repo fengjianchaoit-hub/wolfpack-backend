@@ -53,6 +53,12 @@
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.44.1.0</version>
         </dependency>
+        <!-- Hibernate SQLite方言 -->
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-community-dialects</artifactId>
+            <version>6.4.4.Final</version>
+        </dependency>
                      <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
