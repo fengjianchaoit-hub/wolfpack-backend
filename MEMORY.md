@@ -1,5 +1,17 @@
 # MEMORY.md - 狼头的长期记忆
 
+## 2026-03-11 更新
+
+### 语雀Token更新
+- **Token**: O7aiEXWfSBe0i05hZ50Gdh696BMRucBNDT2ijroH
+- **更新时间**: 2026-03-11 14:04
+- **状态**: ✅ 已验证有效
+- **用户**: 昊天 (haotian-5oupv)
+- **配置文件**: `/root/.openclaw/workspace/yuque_config.json`
+- **知识库**: https://www.yuque.com/haotian-5oupv/douyin-live
+
+---
+
 ## 关键项目记录
 
 ### 飞书IM同步项目
